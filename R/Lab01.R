@@ -2,6 +2,9 @@ if (!require("pacman")) install.packages("pacman")
 pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
 print("hello world version 3")
 
+system("git config --global user.email 'nspacher@vt.edu' ") 
+system("git config --global user.name 'Nick Bentelspacher' ")
+
 data <- data.frame(
   day = as.Date("2019-01-01") + 0:99,
   tmin = runif(100) + seq(1,100)^2.5 / 10000,

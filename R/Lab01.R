@@ -1,6 +1,6 @@
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(ggplot2,dplyr,patchwork,rnoaa,tidyverse,lubridate,cowplot)
-#theme_set(theme_classic())
+theme_set(theme_classic())
 print("hello world version 3")
 
 system("git config --global user.email 'nspacher@vt.edu' ") 
@@ -49,26 +49,24 @@ WXData <- WXData %>% mutate(tmin=tmin/10,
                             tmax=tmax/10,
                             prcp=prcp/10)
 
-#weather plot
+#HW1 weather plot
 precipColor <- "#009E73"
-coeff <- 1
 start <- ymd("2023/01/01")
 end <- ymd("2023/01/14")
 
 weather_plot <- WXData %>% filter(date>start, date<end) %>% ggplot(aes(x=date))+
+  geom_col(aes(y=prcp, fill="Precipitation"), alpha = 0.6)+
   geom_line(aes(y=tmin, color="Minimum Temperature"))+
   geom_line(aes(y=tmax, color="Maximum Temperature"))+
-  geom_line(aes(y=prcp, color="Precipitation"))+
-  geom_line(data=myflowgage$flowdata %>% filter(mdate>start, mdate<end),
-            aes(mdate, flow/100000, color="Flow"))+
   scale_y_continuous(
     # Features of the first axis
     name = "Temperature (C)",
     
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Precipitation (mm)")
+    sec.axis = sec_axis(~., name="Precipitation (mm)")
   ) +
-  scale_color_manual(name=element_blank(), values= c("Minimum Temperature" = "#0072B2", "Maximum Temperature" = "#D55E00","Precipitation" = "#009E73", "Flow"= "#000000"))+
+  scale_color_manual(name=element_blank(), values= c("Minimum Temperature" = "#0072B2", "Maximum Temperature" = "#D55E00"))+
+  scale_fill_manual(name=element_blank(), values=c("Precipitation" = "#009E73"))+
   xlab(element_blank())+
   ggtitle("Weather Data for Staion USC00443204")
 
@@ -79,7 +77,7 @@ streamflow_plot <- myflowgage$flowdata %>% filter(mdate>start, mdate<end) %>%
   ylab(Flow~(m^3/d))
 
 HW2_w <- WXData %>% filter(date>start, date<end) %>% ggplot(aes(x=date))+
-  geom_col(aes(y=prcp, fill="Precipitation"))+
+  geom_col(aes(y=prcp, fill="Precipitation"), alpha = 0.6)+
   geom_line(aes(y=tmin, color="Minimum Temperature"))+
   geom_line(aes(y=tmax, color="Maximum Temperature"))+
   geom_line(data=myflowgage$flowdata %>% filter(mdate>start, mdate<end),
@@ -89,7 +87,7 @@ HW2_w <- WXData %>% filter(date>start, date<end) %>% ggplot(aes(x=date))+
     name = "Temperature (C)",
     
     # Add a second axis and specify its features
-    sec.axis = sec_axis(~.*coeff, name="Precipitation (mm)")
+    sec.axis = sec_axis(~., name="Precipitation (mm)")
   ) +
   scale_color_manual(element_blank(), values= c("Minimum Temperature" = "#0072B2", "Maximum Temperature" = "#D55E00","Flow"= "#000000"))+
   scale_fill_manual(element_blank(), values=c("Precipitation" = "#009E73"))+

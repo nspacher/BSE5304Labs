@@ -260,11 +260,11 @@ points(approxpt$shp[2],approxpt$shp[3],pch=19,col=4)
 
 zoom(src)
 
-#START HERE 
 # Contributing area upstream of outlet
-system("mpiexec -n 2 Aread8 -p mydemp.tif -o Outlet.shp -ad8 mydemssa.tif")
+system("mpiexec -n 2 aread8 -p mydemp.tif -o outlet.shp -ad8 mydemssa.tif")
 ssa=raster("mydemssa.tif")
-plot(ssa) 
+plot(ssa)
+zoom(ssa)
 
 
 # Threshold
@@ -274,11 +274,58 @@ plot(src1)
 zoom(src1)
 
 # Stream Reach and Watershed
-system("mpiexec -n 2 Streamnet -fel mydemfel.tif -p mydemp.tif -ad8 mydemad8.tif -src mydemsrc1.tif -o outlet.shp -ord mydemord.tif -tree mydemtree.txt -coord mydemcoord.txt -net mydemnet.shp -w mydemw.tif")
+system("mpiexec -n 2 streamnet -fel mydemfel.tif -p mydemp.tif -ad8 mydemad8.tif -src mydemsrc1.tif -o outlet.shp -ord mydemord.tif -tree mydemtree.txt -coord mydemcoord.txt -net mydemnet.shp -w mydemw.tif")
 plot(raster("mydemord.tif"))
 zoom(raster("mydemord.tif"))
 plot(raster("mydemw.tif"))
 
+#here
+# Plot streams using stream order as width
+snet=read.shapefile("mydemnet")
+ns=length(snet$shp$shp)
+for(i in 1:ns){
+  lines(snet$shp$shp[[i]]$points,lwd=snet$dbf$dbf$Order[i])
+}
 
+# Peuker Douglas stream definition
+system("mpiexec -n 2 peukerdouglas -fel mydemfel.tif -ss mydemss.tif")
+ss=raster("mydemss.tif")
+plot(ss)
+zoom(ss)
+
+#  Accumulating candidate stream source cells
+system("mpiexec -n 2 aread8 -p mydemp.tif -o outlet.shp -ad8 mydemssa.tif -wg mydemss.tif")
+ssa=raster("mydemssa.tif")
+plot(ssa)
+
+#  Drop Analysis
+system("mpiexec -n 2 dropanalysis -p mydemp.tif -fel mydemfel.tif -ad8 mydemad8.tif -ssa mydemssa.tif -drp mydemdrp.txt -o outlet.shp -par 5 500 10 0")
+
+# Deduce that the optimal threshold is 300 
+# Stream raster by threshold
+system("mpiexec -n 2 threshold -ssa mydemssa.tif -src mydemsrc2.tif -thresh 300")
+plot(raster("mydemsrc2.tif"))
+zoom(raster("mydemsrc2.tif"))
+# Stream network
+system("mpiexec -n 2 streamnet -fel mydemfel.tif -p mydemp.tif -ad8 mydemad8.tif -src mydemsrc2.tif -ord mydemord2.tif -tree mydemtree2.dat -coord mydemcoord2.dat -net mydemnet2.shp -w mydemw2.tif -o outlet.shp",show.output.on.console=F,invisible=F)
+
+plot(raster("mydemw2.tif"))
+snet=read.shapefile("mydemnet2")
+ns=length(snet$shp$shp)
+for(i in 1:ns){
+  lines(snet$shp$shp[[i]]$points,lwd=snet$dbf$dbf$Order[i])
+}
+
+# Wetness Index
+system("mpiexec -n 2 slopearearatio -slp mydemslp.tif -sca mydemsca.tif -sar mydemsar.tif", show.output.on.console=F, invisible=F)
+sar=raster("mydemsar.tif")
+wi=sar
+wi[,]=-log(sar[,])
+plot(wi)
+zoom(wi)
+
+# Distance Down
+system("mpiexec -n 2 dinfdistdown -ang mydemang.tif -fel mydemfel.tif -src mydemsrc2.tif -m ave v -dd mydemdd.tif",show.output.on.console=F,invisible=F)
+plot(raster("mydemdd.tif"))
 
 

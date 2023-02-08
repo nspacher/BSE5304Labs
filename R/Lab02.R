@@ -43,7 +43,7 @@ pacman::p_load(EcoHydRology)
 setwd(datadir)
 
 # Get some flow data from USGS 0205551460 `
-myflowgage_id="0205551460"
+myflowgage_id="0205551460" #lick run
 myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2015-01-01",
                            end_date = "2019-01-01")
 
@@ -192,12 +192,25 @@ setwd(datadir)
 
 z=raster("mydem.tif")
 plot(z)
+zdf <- as.data.frame(z, xy=T)
+str(zdf)
 
 # Pitremove
 system("mpiexec -n 2 pitremove -z mydem.tif -fel mydemfel.tif")
 fel=raster("mydemfel.tif")
 plot(fel)
 
+diff <- fel-z
+diff_df <- as.data.frame(diff, xy=T)
+
+z_plot <- ggplot()+
+  geom_raster(data=zdf,aes(x=x,y=y, fill=layer))+
+  scale_fill_viridis_c(name="Elevation (ft)")
+diff_plot <- ggplot()+
+  geom_raster(data=diff_df,aes(x=x,y=y, fill=layer))+
+  scale_fill_viridis_c(name="Elevation Difference (ft)", option="plasma")
+
+z_plot+diff_plot
 
 # D8 flow directions
 system("mpiexec -n 2 d8flowdir -p mydemp.tif -sd8 mydemsd8.tif -fel mydemfel.tif",show.output.on.console=F,invisible=F)
@@ -278,6 +291,8 @@ system("mpiexec -n 2 streamnet -fel mydemfel.tif -p mydemp.tif -ad8 mydemad8.tif
 plot(raster("mydemord.tif"))
 zoom(raster("mydemord.tif"))
 plot(raster("mydemw.tif"))
+plot(approxpt,add=T,col="blue")
+zoom(raster("mydemw.tif"),ext=zoomext)
 
 #here
 # Plot streams using stream order as width
@@ -329,3 +344,27 @@ system("mpiexec -n 2 dinfdistdown -ang mydemang.tif -fel mydemfel.tif -src mydem
 plot(raster("mydemdd.tif"))
 
 
+#masking rasters for plots
+#new extent for masked dems
+extent <- extent(587500, 595000, 4125000, 4135000)
+mask <- raster("mydemw.tif") 
+fel_mask <- mask(fel,mask)
+fel_mask <- crop(fel_mask,extent)
+diff_mask <- mask(diff,mask)
+diff_mask <- crop(diff_mask,extent)
+plot(diff_mask)
+
+fel_df_mask <- as.data.frame(fel_mask,xy=T)
+diff_df_mask <- as.data.frame(diff_mask,xy=T)
+
+fel_plot <- ggplot()+
+  geom_raster(data=fel_df_mask,aes(x=x,y=y,fill=mydemfel))+
+  scale_fill_viridis_c(name="Elevation (ft)")+
+  labs(title="Lick Run Basin Filled DEM",x=element_blank(),y=element_blank())
+diff_plot <- 
+  ggplot()+
+  geom_raster(data=diff_df_mask,aes(x=x,y=y,fill=layer))+
+  scale_fill_viridis_c(name="Elevation Difference (ft)",option = "H")+
+  labs(title="Difference between DEM and Filled DEM",x=element_blank(),y=element_blank())
+
+fel_plot+diff_plot

@@ -187,60 +187,60 @@ bboxpts
 bboxpts=SpatialPoints(bboxpts,proj4string = crs_utm)
 
 #DEM from aws
-bonhomme=get_aws_terrain(locations=bboxpts@coords, 
+SL=get_aws_terrain(locations=bboxpts@coords, 
                          z = 12, prj = proj4_utm,src ="aws",expand=1)
 
 setwd(datadir)
-writeRaster(bonhomme,filename = "bonhomme.tif",overwrite=T)
+writeRaster(SL,filename = "SL.tif",overwrite=T)
 
 #Watershed Delineation
 
-z=raster("bonhomme.tif")
+z=raster("SL.tif")
 plot(z)
 
 # Pitremove
-system("mpiexec -n 2 pitremove -z bonhomme.tif -fel bonhommefel.tif")
-fel=raster("bonhommefel.tif")
+system("mpiexec -n 2 pitremove -z SL.tif -fel SLfel.tif")
+fel=raster("SLfel.tif")
 plot(fel)
 
 
 # D8 flow directions
-system("mpiexec -n 2 d8flowdir -p bonhommep.tif -sd8 bonhommesd8.tif -fel bonhommefel.tif",show.output.on.console=F,invisible=F)
-p=raster("bonhommep.tif")
+system("mpiexec -n 2 d8flowdir -p SLp.tif -sd8 SLsd8.tif -fel SLfel.tif",show.output.on.console=F,invisible=F)
+p=raster("SLp.tif")
 plot(p)
-sd8=raster("bonhommesd8.tif")
+sd8=raster("SLsd8.tif")
 plot(sd8)
 
 # Contributing area
-system("mpiexec -n 2 aread8 -p bonhommep.tif -ad8 bonhommead8.tif")
-ad8=raster("bonhommead8.tif")
+system("mpiexec -n 2 aread8 -p SLp.tif -ad8 SLad8.tif")
+ad8=raster("SLad8.tif")
 plot(log(ad8))
 zoom(log(ad8))
 
 
 # Grid Network 
-system("mpiexec -n 2 gridnet -p bonhommep.tif -gord bonhommegord.tif -plen bonhommeplen.tif -tlen bonhommetlen.tif")
-gord=raster("bonhommegord.tif")
+system("mpiexec -n 2 gridnet -p SLp.tif -gord SLgord.tif -plen SLplen.tif -tlen SLtlen.tif")
+gord=raster("SLgord.tif")
 plot(gord)
 zoom(gord)
 
 # DInf flow directions
-system("mpiexec -n 2 dinfflowdir -ang bonhommeang.tif -slp bonhommeslp.tif -fel bonhommefel.tif",show.output.on.console=F,invisible=F)
-ang=raster("bonhommeang.tif")
+system("mpiexec -n 2 dinfflowdir -ang SLang.tif -slp SLslp.tif -fel SLfel.tif",show.output.on.console=F,invisible=F)
+ang=raster("SLang.tif")
 plot(ang)
-slp=raster("bonhommeslp.tif")
+slp=raster("SLslp.tif")
 plot(slp)
 
 
 # Dinf contributing area
-system("mpiexec -n 2 areadinf -ang bonhommeang.tif -sca bonhommesca.tif")
-sca=raster("bonhommesca.tif")
+system("mpiexec -n 2 areadinf -ang SLang.tif -sca SLsca.tif")
+sca=raster("SLsca.tif")
 plot(log(sca))
 zoom(log(sca))
 
 # Threshold
-system("mpiexec -n 2 threshold -ssa bonhommead8.tif -src bonhommesrc.tif -thresh 100")
-src=raster("bonhommesrc.tif")
+system("mpiexec -n 2 threshold -ssa SLad8.tif -src SLsrc.tif -thresh 100")
+src=raster("SLsrc.tif")
 plot(src)
 zoom(src)
 
@@ -251,7 +251,7 @@ writeOGR(outlet,dsn=".",layer="approxoutlets",
 
 
 # Move Outlets
-system("mpiexec -n 2 moveoutletstostrm -p bonhommep.tif -src bonhommesrc.tif -o approxoutlets.shp -om outlet.shp")
+system("mpiexec -n 2 moveoutletstostrm -p SLp.tif -src SLsrc.tif -o approxoutlets.shp -om outlet.shp")
 
 approxpt=readOGR("approxoutlets.shp")
 plot(approxpt,add=T,col="blue")
@@ -266,30 +266,30 @@ points(approxpt$shp[2],approxpt$shp[3],pch=19,col=4)
 zoom(src)
 
 # Contributing area upstream of outlet
-system("mpiexec -n 2 aread8 -p bonhommep.tif -o outlet.shp -ad8 bonhommessa.tif")
-ssa=raster("bonhommessa.tif")
+system("mpiexec -n 2 aread8 -p SLp.tif -o outlet.shp -ad8 SLssa.tif")
+ssa=raster("SLssa.tif")
 plot(ssa)
 zoom(ssa)
 
 
 # Threshold
-system("mpiexec -n 2 threshold -ssa bonhommessa.tif -src bonhommesrc1.tif -thresh 2000")
-src1=raster("bonhommesrc1.tif")
+system("mpiexec -n 2 threshold -ssa SLssa.tif -src SLsrc1.tif -thresh 2000")
+src1=raster("SLsrc1.tif")
 plot(src1)
 zoom(src1)
 
 # Stream Reach and Watershed
-system("mpiexec -n 2 streamnet -fel bonhommefel.tif -p bonhommep.tif -ad8 bonhommead8.tif -src bonhommesrc1.tif -o outlet.shp -ord bonhommeord.tif -tree bonhommetree.txt -coord bonhommecoord.txt -net bonhommenet.shp -w bonhommew.tif")
-plot(raster("bonhommeord.tif"))
-zoom(raster("bonhommeord.tif"))
-plot(raster("bonhommew.tif"))
+system("mpiexec -n 2 streamnet -fel SLfel.tif -p SLp.tif -ad8 SLad8.tif -src SLsrc1.tif -o outlet.shp -ord SLord.tif -tree SLtree.txt -coord SLcoord.txt -net SLnet.shp -w SLw.tif")
+plot(raster("SLord.tif"))
+zoom(raster("SLord.tif"))
+plot(raster("SLw.tif"))
 plot(approxpt,add=T,col="blue")
-zoom(raster("bonhommew.tif"),ext=zoomext)
+zoom(raster("SLw.tif"),ext=zoomext)
 
 
 #masking rasters for plots
-b_extent <- extent(700000, 709000, 4270000, 4282500) #new extent for masked dems
-mask <- raster("bonhommew.tif") 
+b_extent <- extent(547500, 555000, 4117500, 4124000) #new extent for masked dems
+mask <- raster("SLw.tif") 
 fel_mask <- mask(fel,mask)
 fel_mask <- crop(fel_mask,b_extent)
 
@@ -303,9 +303,9 @@ fel_df_mask <- as.data.frame(fel_mask,xy=T)
 diff_df_mask <- as.data.frame(diff_mask,xy=T)
 
 fel_plot <- ggplot()+
-  geom_raster(data=fel_df_mask,aes(x=x,y=y,fill=bonhommefel))+
+  geom_raster(data=fel_df_mask,aes(x=x,y=y,fill=SLfel))+
   scale_fill_viridis_c(name="Elevation (ft)")+
-  labs(title="Bonhomme Creek near Clarkson Valley, MO Watershed Filled DEM",x=element_blank(),y=element_blank())
+  labs(title="StREAM LAB Watershed Filled DEM",x=element_blank(),y=element_blank())
 diff_plot <- 
   ggplot()+
   geom_raster(data=diff_df_mask,aes(x=x,y=y,fill=layer))+

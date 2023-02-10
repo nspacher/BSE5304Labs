@@ -1,5 +1,5 @@
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(ggplot2,dplyr,patchwork,rnoaa,hydroGOF)
+pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
 pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
                rnoaa,raster,shapefiles,rgdal,elevatr,terra,progress,lubridate)
 pacman::p_load(EcoHydRology)
@@ -178,12 +178,12 @@ writeOGR(mydemw_poly,dsn=".",layer="mydemw",driver="ESRI Shapefile", overwrite_l
 zip("mydemw.zip",list.files(pattern="mydemw[:.:]"))
 
 #download wss data, replace url
-url="https://websoilsurvey.sc.egov.usda.gov/DSD/Download/AOI/nx3xvect4avmh0dzomnbf3kz/wss_aoi_???.zip"
+url="https://websoilsurvey.sc.egov.usda.gov/DSD/Download/AOI/ozkvfr2zpqxpyosivlakkkuf/wss_aoi_2023-02-10_14-52-22.zip"
 download.file(url,"wss_aoi.zip")
 unzip("wss_aoi.zip")
 
 # This needs to be completed based on your download, ??? == hms from downloaded zip
-mysoil=readOGR("wss_aoi_???/spatial/soilmu_a_aoi.shp") 
+mysoil=readOGR("wss_aoi_2023-02-10_14-52-22/spatial/soilmu_a_aoi.shp") 
 
 #Soil data SQL operations
 # First associate mukey with cokey from component
@@ -212,3 +212,131 @@ mu2chmax=aggregate(mu2ch,list(mu2ch$mukey),max) #get AWC for model, use mean?
 summary(mu2chmax) 
 
 #need to find the average distance to water table or depth of soil to the closest confining layer 
+
+#TMWB model
+TMWB=BasinData
+
+#snow melt
+SFTmp = 1  # referred to as SFTMP in SWAT input (Table 1)
+bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
+bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
+Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
+Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
+TMWB$AvgTemp=(TMWB$MaxTemp-TMWB$MinTemp)/2
+
+TMWB$bmlt = (bmlt6 + bmlt12)/2 + (bmlt6 - bmlt12)/2 *  sin(2*pi/365*(julian(TMWB$date,origin = as.Date("2000-01-01"))-81))
+# Initialize SNO, Tsno as well as the first values of each
+TMWB$SNO = 0  # Snow Depth (mm)
+TMWB$Tsno = 0  # Snow Temp (C)
+TMWB$SNOmlt = 0  # Snow Melt (mm)
+attach(TMWB)
+for (t in 2:length(date)){
+  Tsno[t]= Tsno[t-1] * (1.0-Tlag) +  AvgTemp[t] * Tlag
+  if(AvgTemp[t] < SFTmp){
+    SNO[t]= SNO[t-1] + P[t]
+  }  else {
+    SNOmlt[t]= bmlt[t] * SNO[t-1] * ((Tsno[t]+MaxTemp[t])/2 - Tmlt) 
+    SNOmlt[t]= min(SNOmlt[t],SNO[t-1])
+    SNO[t]= SNO[t-1] -SNOmlt[t]
+  }
+  print(t)
+}
+plot(date,SNO,type="l")
+detach(TMWB)
+TMWB$Tsno=Tsno
+TMWB$SNO=SNO
+TMWB$SNOmlt=SNOmlt
+rm(list=c("SNO", "SNOmlt", "Tsno"))
+
+#Thornthwaite Mather watershed yield 
+TMWB$PET = mean(TMWB$P,na.rm=T)-mean(TMWB$Qmm,na.rm=T)  # in mm/day
+
+TMWB$AWC=350 
+#soil wetting functions
+soilwetting<-function(AWprev,dP_func,AWC_func){
+  AW_func<-AWprev+dP_func
+  excess_func<-0.0
+  c(AW_func,excess_func)
+} 
+
+soildrying<-function(AWprev,dP_func,AWC_func){
+  AW_func=AWprev*exp(dP_func/AWC_func)
+  excess_func<-0.0
+  c(AW_func,excess_func)
+}
+
+# soil_wetting_above_capacity function
+soil_wetting_above_capacity<-function(AWprev,dP_func,AWC_func){
+  AW_func<-AWC_func
+  excess_func<-AWprev+dP_func-AWC_func
+  c(AW_func,excess_func)
+}
+
+#water balance model better ET
+# myflowgage$FldCap=.45
+# myflowgage$WiltPt=.15
+# myflowgage$Z=1000
+# TMWB$AWC=(myflowgage$FldCap-myflowgage$WiltPt)*myflowgage$Z # 
+TMWB$dP = 0 # Initializing Net Precipitation
+TMWB$ET = 0 # Initializing ET
+TMWB$AW = 0 # Initializing AW
+TMWB$Excess = 0 # Initializing Excess
+
+
+# Loop to calculate AW and Excess
+attach(TMWB)
+for (t in 2:length(AW)){
+  # This is where Net Precipitation is now calculated
+  # Do you remember what Net Precip is? Refer to week 2 notes
+  ET[t] = (AW[t-1]/AWC[t-1])*PET[t] # New Model
+  if(AvgTemp[t] >= SFTmp){
+    dP[t] = P[t] - ET[t] + SNOmlt[t] 
+  }  else {
+    dP[t] = ET[t]
+  }
+  # From here onward, everything is the same as Week2’s lab
+  if (dP[t]<=0) {
+    values<-soildrying(AW[t-1],dP[t],AWC[t])
+  } else if((dP[t]>0) & (AW[t-1]+dP[t])<=AWC[t]) {
+    values<-soilwetting(AW[t-1],dP[t],AWC[t])
+  } else {
+    values<-soil_wetting_above_capacity(AW[t-1],dP[t],AWC[t])
+  }
+  AW[t]<-values[1]
+  Excess[t]<-values[2]
+  print(t)
+}
+TMWB$AW=AW
+TMWB$Excess=Excess
+TMWB$dP=dP
+TMWB$ET=ET
+rm(list=c("AW","dP","ET", "Excess"))
+detach(TMWB) # IMPORTANT TO DETACH
+
+#Calculate Watershed Storage and River Discharge, S and Qpred, playing with the reservoir coefficient to try to get Qpred to best match Qmm
+TMWB$Qpred=NA
+TMWB$Qpred[1]=0
+TMWB$S=NA
+TMWB$S[1]=0
+attach(TMWB)
+fcres=.5
+for (t in 2:length(date)){
+  S[t]=S[t-1]+Excess[t]     
+  Qpred[t]=fcres*S[t]
+  S[t]=S[t]-Qpred[t]
+}
+TMWB$S=S
+TMWB$Qpred=Qpred
+
+detach(TMWB) # IMPORTANT TO DETACH
+rm(list=c("Qpred","S"))
+#nse function
+NSE=function(Yobs,Ysim){
+  return(1-sum((Yobs-Ysim)^2,na.rm=TRUE)/sum((Yobs-mean(Yobs, na.rm=TRUE))^2, na.rm=TRUE))
+}
+
+ggplot(TMWB, aes(date,Qmm,color="Qmm"))+
+  geom_line()+
+  geom_line(aes(y=Qpred,color="Qpred"))+
+  scale_color_manual(name=element_blank(),values=c("Qmm"="black","Qpred"="magenta"))+
+  labs(title = NSE(TMWB$Qmm,TMWB$Qpred),y="Area Normalized Flow (mm/day)",x=element_blank())

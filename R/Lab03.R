@@ -4,7 +4,7 @@
 # it is worthwhile loading them at the beginning
 #
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(ggplot2,dplyr,patchwork,rnoaa,hydroGOF)
+pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
 pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
                rnoaa,raster,shapefiles,rgdal,elevatr,terra,progress,lubridate)
 LabNo="/Lab03"
@@ -45,7 +45,7 @@ pacman::p_load(EcoHydRology)
 
 setwd(datadir)
 
-myflowgage_id="0205551460"
+myflowgage_id="14138870" #FIR CREEK NEAR BRIGHTWOOD, OR
 myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2015-01-01",
                            end_date = "2019-01-01")
 #

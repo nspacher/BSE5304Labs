@@ -1,9 +1,10 @@
 # 
+#https://docs.google.com/document/d/1zwikMp6t-wKg0GkLXTOA_y7PdcJ6xvGDVUrlAKqLizc/edit
 # Since everything depends on the libraries you install
 # it is worthwhile loading them at the beginning
 #
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
+pacman::p_load(ggplot2,dplyr,patchwork,rnoaa,hydroGOF)
 pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
                rnoaa,raster,shapefiles,rgdal,elevatr,terra,progress,lubridate)
 LabNo="/Lab03"
@@ -425,3 +426,100 @@ TMWB$Excess<-Excess
 rm(list=c("AW","Excess"))
 
 #Start at problem 3 in lab03 document
+#problem 3 start
+TMWB$Qpred=NA
+TMWB$Qpred[1]=0
+TMWB$S=NA
+TMWB$S[1]=0
+
+attach(TMWB)
+fcres=.2   # reservoir coefficient
+for (t in 2:length(date)){
+  S[t]=S[t-1]+Excess[t]     
+  Qpred[t]=fcres*S[t]
+  S[t]=S[t]-Qpred[t]
+}
+detach(TMWB) # IMPORTANT TO DETACH
+TMWB$S=S
+TMWB$Qpred=Qpred # UPDATE vector BEFORE DETACHING
+rm(list=c("S","Qpred"))
+#View(TMWB)
+dev.off()
+plot(TMWB$date,TMWB$Qmm,col="black",ylab ="Qmm(mm)",xlab="date",type="l")
+lines(TMWB$date,TMWB$Qpred,col="blue",type="l", 
+        xlab = "", ylab = "")
+legend("topright", c("Qmm(mm)", "Qpred(mm)"), col = c("black", "blue"),
+         lty = 1:2, cex = 0.8)
+#NSE
+NSE(TMWB$Qpred,TMWB$Qmm)
+
+TMWB$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm
+myflowgage$FldCap=.45
+myflowgage$WiltPt=.15
+myflowgage$Z=1000
+TMWB$AWC=(myflowgage$FldCap-myflowgage$WiltPt)*myflowgage$Z # 
+TMWB$dP = 0 # Initializing Net Precipitation
+TMWB$ET = 0 # Initializing ET
+TMWB$AW = 0 # Initializing AW
+TMWB$Excess = 0 # Initializing Excess
+
+
+# Loop to calculate AW and Excess
+attach(TMWB)
+for (t in 2:length(AW)){
+  # This is where Net Precipitation is now calculated
+  # Do you remember what Net Precip is? Refer to week 2 notes
+  ET[t] = (AW[t-1]/AWC[t-1])*PET[t] # New Model
+if(AvgTemp[t] >= SFTmp){
+  dP[t] = P[t] - ET[t] + SNOmlt[t] 
+}  else {
+  dP[t] = ET[t]
+}
+# From here onward, everything is the same as Week2’s lab
+if (dP[t]<=0) {
+  values<-soildrying(AW[t-1],dP[t],AWC[t])
+} else if((dP[t]>0) & (AW[t-1]+dP[t])<=AWC[t]) {
+  values<-soilwetting(AW[t-1],dP[t],AWC[t])
+} else {
+  values<-soil_wetting_above_capacity(AW[t-1],dP[t],AWC[t])
+}
+AW[t]<-values[1]
+Excess[t]<-values[2]
+print(t)
+}
+TMWB$AW=AW
+TMWB$Excess=Excess
+TMWB$dP=dP
+TMWB$ET=ET
+rm(list=c("AW","dP","ET", "Excess"))
+detach(TMWB) # IMPORTANT TO DETACH
+
+#Calculate Watershed Storage and River Discharge, S and Qpred, playing with the reservoir coefficient to try to get Qpred to best match Qmm
+TMWB$Qpred=NA
+TMWB$Qpred[1]=0
+TMWB$S=NA
+TMWB$S[1]=0
+attach(TMWB)
+fcres=.2
+for (t in 2:length(date)){
+  S[t]=S[t-1]+Excess[t]     
+  Qpred[t]=fcres*S[t]
+  S[t]=S[t]-Qpred[t]
+}
+TMWB$S=S
+TMWB$Qpred=Qpred # UPDATE vector BEFORE DETACHING
+
+#Make a plot that has Qmm, P,and Qpred over time
+plot(date,P,col="black")
+lines(date,Qmm,type = "l",col="black")
+lines(date,Qpred,type="l",col="blue")
+detach(TMWB) # IMPORTANT TO DETACH
+rm(list=c("Qpred","S"))
+
+dev.off()
+plot(TMWB$date,TMWB$Qmm,col="black",ylab ="Qmm(mm)",xlab="date",type="l")
+lines(TMWB$date,TMWB$Qpred,col="blue",type="l", 
+      xlab = "", ylab = "")
+legend("topright", c("Qmm(mm)", "Qpred(mm)"), col = c("black", "blue"),
+       lty = 1:2, cex = 0.8)
+NSE(TMWB$Qpred,TMWB$Qmm)

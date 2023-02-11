@@ -460,8 +460,8 @@ myflowgage$Z=1000
 TMWB$AWC=(myflowgage$FldCap-myflowgage$WiltPt)*myflowgage$Z # 
 TMWB$dP = 0 # Initializing Net Precipitation
 TMWB$ET = 0 # Initializing ET
-TMWB$AW = 0 # Initializing AW
-TMWB$Excess = 0 # Initializing Excess
+#TMWB$AW = 0 # Initializing AW
+#TMWB$Excess = 0 # Initializing Excess
 
 
 # Loop to calculate AW and Excess
@@ -523,3 +523,4 @@ lines(TMWB$date,TMWB$Qpred,col="blue",type="l",
 legend("topright", c("Qmm(mm)", "Qpred(mm)"), col = c("black", "blue"),
        lty = 1:2, cex = 0.8)
 NSE(TMWB$Qpred,TMWB$Qmm)
+

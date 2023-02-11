@@ -272,6 +272,10 @@ soil_wetting_above_capacity<-function(AWprev,dP_func,AWC_func){
   c(AW_func,excess_func)
 }
 
+#nse function
+NSE=function(Yobs,Ysim){
+  return(1-sum((Yobs-Ysim)^2,na.rm=TRUE)/sum((Yobs-mean(Yobs, na.rm=TRUE))^2, na.rm=TRUE))
+}
 #water balance model better ET
 # myflowgage$FldCap=.45
 # myflowgage$WiltPt=.15
@@ -280,6 +284,7 @@ soil_wetting_above_capacity<-function(AWprev,dP_func,AWC_func){
 TMWB$dP = 0 # Initializing Net Precipitation
 TMWB$ET = 0 # Initializing ET
 TMWB$AW = 0 # Initializing AW
+TMWB$AW[1]=250
 TMWB$Excess = 0 # Initializing Excess
 
 
@@ -319,7 +324,7 @@ TMWB$Qpred[1]=0
 TMWB$S=NA
 TMWB$S[1]=0
 attach(TMWB)
-fcres=.5
+fcres=0.4
 for (t in 2:length(date)){
   S[t]=S[t-1]+Excess[t]     
   Qpred[t]=fcres*S[t]
@@ -330,13 +335,28 @@ TMWB$Qpred=Qpred
 
 detach(TMWB) # IMPORTANT TO DETACH
 rm(list=c("Qpred","S"))
-#nse function
-NSE=function(Yobs,Ysim){
-  return(1-sum((Yobs-Ysim)^2,na.rm=TRUE)/sum((Yobs-mean(Yobs, na.rm=TRUE))^2, na.rm=TRUE))
-}
 
-ggplot(TMWB, aes(date,Qmm,color="Qmm"))+
-  geom_line()+
+Qplot <- ggplot(TMWB, aes(x=date))+
+  geom_line(aes(y=Qmm,color="Qmm"))+
   geom_line(aes(y=Qpred,color="Qpred"))+
-  scale_color_manual(name=element_blank(),values=c("Qmm"="black","Qpred"="magenta"))+
-  labs(title = NSE(TMWB$Qmm,TMWB$Qpred),y="Area Normalized Flow (mm/day)",x=element_blank())
+  #geom_line(aes(y=Excess,color="Excess"))+
+  scale_color_hue(name=element_blank())+
+  labs(title = paste("NSE =",signif(NSE(TMWB$Qmm,TMWB$Qpred),digits=4)),y="Area Normalized Flow (mm/day)",x=element_blank())
+Qplot
+
+P_plot <- ggplot(TMWB, aes(date))+
+  geom_col(aes(y=P, fill="Precipitation"))+
+  geom_col(aes(y=Excess,fill="Excess"))+
+  geom_line(aes(y=ET,color="ET"))+
+  scale_y_continuous(name="Depth of Water (mm)",
+                     sec.axis=sec_axis(~.*(35/6), name="Available Soil Water (mm)")
+                     )+
+  geom_line(aes(x=date,y=AW*(6/35),color="AW"))+
+  scale_fill_manual(name=element_blank(), values=c("Precipitation"="blue", "Excess"="red"))+
+  scale_color_manual(name=element_blank(),values=c("AW"="orange","ET"="darkgreen"))+
+  labs(x=element_blank())
+P_plot
+
+Qplot/P_plot
+
+

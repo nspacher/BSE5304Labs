@@ -1,3 +1,5 @@
+#https://docs.google.com/document/d/1zwikMp6t-wKg0GkLXTOA_y7PdcJ6xvGDVUrlAKqLizc/edit
+
 if (!require("pacman")) install.packages("pacman")
 pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
 pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
@@ -22,7 +24,7 @@ system("git config pull.rebase false")
 
 setwd(datadir)
 
-myflowgage_id="0205551460"
+myflowgage_id="14138870" #FIR CREEK NEAR BRIGHTWOOD, OR
 myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2015-01-01",
                          end_date = "2019-01-01")
 
@@ -218,8 +220,8 @@ TMWB=BasinData
 
 #snow melt
 SFTmp = 1  # referred to as SFTMP in SWAT input (Table 1)
-bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
-bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
+bmlt6 = 1.4   # referred to as SMFMX in SWAT input (Table 1)
+bmlt12 =0  # referred to as SMFMN in SWAT input adjusted for season
 Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
 Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
 TMWB$AvgTemp=(TMWB$MaxTemp-TMWB$MinTemp)/2
@@ -284,7 +286,7 @@ NSE=function(Yobs,Ysim){
 TMWB$dP = 0 # Initializing Net Precipitation
 TMWB$ET = 0 # Initializing ET
 TMWB$AW = 0 # Initializing AW
-TMWB$AW[1]=250
+TMWB$AW[1]=350
 TMWB$Excess = 0 # Initializing Excess
 
 
@@ -324,7 +326,7 @@ TMWB$Qpred[1]=0
 TMWB$S=NA
 TMWB$S[1]=0
 attach(TMWB)
-fcres=0.4
+fcres=0.3587
 for (t in 2:length(date)){
   S[t]=S[t-1]+Excess[t]     
   Qpred[t]=fcres*S[t]
@@ -335,7 +337,7 @@ TMWB$Qpred=Qpred
 
 detach(TMWB) # IMPORTANT TO DETACH
 rm(list=c("Qpred","S"))
-
+signif(NSE(TMWB$Qmm,TMWB$Qpred),digits=4)
 Qplot <- ggplot(TMWB, aes(x=date))+
   geom_line(aes(y=Qmm,color="Qmm"))+
   geom_line(aes(y=Qpred,color="Qpred"))+
@@ -349,9 +351,9 @@ P_plot <- ggplot(TMWB, aes(date))+
   geom_col(aes(y=Excess,fill="Excess"))+
   geom_line(aes(y=ET,color="ET"))+
   scale_y_continuous(name="Depth of Water (mm)",
-                     sec.axis=sec_axis(~.*(35/6), name="Available Soil Water (mm)")
+                     sec.axis=sec_axis(~.*(7), name="Available Soil Water (mm)")
                      )+
-  geom_line(aes(x=date,y=AW*(6/35),color="AW"))+
+  geom_line(aes(x=date,y=AW*(5/35),color="AW"))+
   scale_fill_manual(name=element_blank(), values=c("Precipitation"="blue", "Excess"="red"))+
   scale_color_manual(name=element_blank(),values=c("AW"="orange","ET"="darkgreen"))+
   labs(x=element_blank())

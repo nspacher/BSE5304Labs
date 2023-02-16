@@ -1,5 +1,11 @@
+#SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
+#bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
+#bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
+#Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
+#Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
+
 TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
-  # WBData=TMWB
+  #WBData=TMWB
   #SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
   #bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
   #bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
@@ -36,6 +42,6 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
   WBData$SNO=SNO
   WBData$SNOmlt=SNOmlt
   WBData$SNOfall=SNOfall
-  rm(list=c("SNO", "SNOmlt", "Tsno", "SNOfall"))
+  rm(list=c("SNO", "SNOmlt", "Tsno","SNOfall"))
   return(data.frame(Tsno=WBData$Tsno,SNO=WBData$SNO,SNOmlt=WBData$SNOmlt,SNOfall=WBData$SNOfall))
 }

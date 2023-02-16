@@ -347,8 +347,8 @@ Qplot <- ggplot(TMWB, aes(x=date))+
 Qplot
 
 P_plot <- ggplot(TMWB, aes(date))+
-  geom_col(aes(y=P, fill="Precipitation"))+
   geom_col(aes(y=Excess,fill="Excess"))+
+  geom_col(aes(y=P, fill="Precipitation"))+
   geom_line(aes(y=ET,color="ET"))+
   scale_y_continuous(name="Depth of Water (mm)",
                      sec.axis=sec_axis(~.*(7), name="Available Soil Water (mm)")
@@ -360,5 +360,7 @@ P_plot <- ggplot(TMWB, aes(date))+
 P_plot
 
 Qplot/P_plot
-
-
+min(TMWB$Qpred)
+max(TMWB$Qpred)
+max(TMWB$Excess)
+IQR(TMWB$Qpred)

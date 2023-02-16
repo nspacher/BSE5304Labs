@@ -389,51 +389,10 @@ bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
 Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
 Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
 
-TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
- # WBData=TMWB
-  #SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
-  #bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
-  #bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
-  #Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
-  #Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
-  WBData$AvgTemp=(WBData$MaxTemp-WBData$MinTemp)/2
-  WBData$bmlt = (bmlt6 + bmlt12)/2 + (bmlt6 - bmlt12)/2 * 
-    sin(2*pi/365*(julian(WBData$date,origin = as.Date("2000-01-01"))-81))
-  # Initialize SNO, Tsno as well as the first values of each
-  WBData$SNO = 0  # Snow Depth (mm)
-  WBData$Tsno = 0  # Snow Temp (C)
-  WBData$SNOmlt = 0  # Snow Melt (mm)
-  WBData$SNOfall = 0  # Snow Fall (mm)
-  attach(WBData)
-  for (t in 2:length(date)){
-    SNOmlt[t]=0
-    Tsno[t]= Tsno[t-1] * (1.0-Tlag) +  AvgTemp[t] * Tlag
-    if(AvgTemp[t] < SFTmp){
-      SNO[t]= SNO[t-1] + P[t]
-      #
-      # Eeee... I forgot to save my snowfall!
-      #
-      SNOfall[t]=P[t]
-    }  else {
-      SNOmlt[t]= bmlt[t] * SNO[t-1] * ((Tsno[t]+MaxTemp[t])/2 - Tmlt) 
-      SNOmlt[t]= min(SNOmlt[t],SNO[t-1])
-      SNO[t]= SNO[t-1] -SNOmlt[t]
-    }
-    print(t)
-  }
-  plot(date,SNO,type="l")
-  detach(WBData)
-  WBData$Tsno=Tsno
-  WBData$SNO=SNO
-  WBData$SNOmlt=SNOmlt
-  WBData$SNOfall=SNOfall
-  rm(list=c("SNO", "SNOmlt", "Tsno", "SNOfall"))
-  return(data.frame(Tsno=WBData$Tsno,SNO=WBData$SNO,SNOmlt=WBData$SNOmlt,SNOfall=WBData$SNOfall))
-}
 
 
 
-SNO_df=TISnow(TMWB)
+SNO_df=TISnow(TMWB,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1)
 TMWB$SNO=SNO_df$SNO
 TMWB$SNOmlt=SNO_df$SNOmlt
 TMWB$SNOfall=SNO_df$SNOfall
@@ -442,12 +401,14 @@ detach(TMWB)
 #
 # Our PET Model we will borrow from EcoHydrology
 #
-?PET_fromTemp
+
+
 attach(TMWB)
 TMWB$PET=PET_fromTemp(Jday=(1+as.POSIXlt(date)$yday),Tmax_C = MaxTemp,Tmin_C = MinTemp,
                       lat_radians = myflowgage$declat*pi/180) * 1000
 plot(date,TMWB$PET)
 detach(TMWB)
+
 
 # Our TMWB Model
 
@@ -511,7 +472,7 @@ detach(TMWB) # IMPORTANT TO DETACH
 TMWB$S=S
 TMWB$Qpred=Qpred # UPDATE vector BEFORE DETACHING
 rm(list=c("S","Qpred"))
-View(TMWB)
+#View(TMWB)
 dev.off()
 plot(TMWB$date,TMWB$Qmm,col="black",ylab ="Qmm(mm)",xlab="date",type="l")
 lines(TMWB$date,TMWB$Qpred,col="blue",type="l", 
@@ -563,8 +524,9 @@ TMWB$Qpred=NA
 TMWB$Qpred[1]=0
 TMWB$S=NA
 TMWB$S[1]=0
+
 attach(TMWB)
-fcres=.3
+fcres=0.3
 for (t in 2:length(date)){
   S[t]=S[t-1]+Excess[t]     
   Qpred[t]=fcres*S[t]
@@ -576,12 +538,65 @@ detach(TMWB) # IMPORTANT TO DETACH
 rm(list=c("Qpred","S"))
 
 #Make a plot that has Qmm, P,and Qpred over time
+attach(TMWB)
 plot(TMWB$date,P,col="black")
-lines(date,Qmm,type = "l",col="black")
+lines(date,Qmm,type = "l",col="red")
 lines(date,Qpred,col="blue")
-
+detach(TMWB)
+#nse function
+NSE=function(Yobs,Ysim){
+  return(1-sum((Yobs-Ysim)^2,na.rm=TRUE)/sum((Yobs-mean(Yobs, na.rm=TRUE))^2, na.rm=TRUE))
+}
+NSE(TMWB$Qmm,TMWB$Qpred)
 #
 # Functionalizing big big big time
 # Here is a great place to make this into a function!
 # return(TMWB)
+TMWBnew <- TMWB
+
+BasinTMWB_JO=TMWBnew[(month(TMWBnew$date) > 5 
+                      & month(TMWBnew$date) < 11),]
+attach(BasinTMWB_JO)
+plot(dP,Qmm)
+detach(BasinTMWB_JO)
+
+(1000/85-10)*25.4   # our CN estimate in bold
+#[1] 44.82353
+(1000/50-10)*25.4   # our CN estimate in bold
+#[1] 254
+#
+# So we are going to visually "guestimate" that S should be somewhere between 
+# 45mm and 260mm… repeat plotting until your solution covers the 
+# largest Qmm vs dP event (upper right hand corner of plot). 
+# 
+# Assuming that (P-Ia) ~ dP, we can visually compare 
+attach(BasinTMWB_JO)
+plot(dP,Qmm)
+points(dP,dP^2/(dP+45),col="red")  # S guestimates in bold
+points(dP,dP^2/(dP+260),col="blue")# S guestimates in bold
+
+# Now perform a “Calibration” using our method from Lab3 and the NSE
+# as the “Objective Function”.  
+#
+# Vary S to maximize NSE using Eq. 4 of Lyon 2004 as our predictor of Q
+#   Qpred=dP^2/(dP+S)
+#
+NSE(Qmm,dP^2/(dP+260))
+# [1] 0.02375528
+ NSE(Qmm,dP^2/(dP+45))
+#[1] -0.5212436
+#
+# Keep iterating until NSE is as high as you can get for your 
+# best estimate to S (Sest)
+#
+f <- function (x) {
+  Sest=x
+  NSE(Qmm,dP^2/(dP+Sest))
+}
+optimize(f, c(50,500), tol = 0.0001,maximum = TRUE)$maximum
+Sest="WHAT?"
+plot(dP,Qmm)
+points(dP,dP^2/(dP+Sest),col="red") 
+########
+detach(BasinTMWB_JO)
 

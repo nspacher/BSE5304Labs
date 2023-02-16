@@ -22,7 +22,7 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
       #
       # Eeee... I forgot to save my snowfall!
       #
-      SNOfall=P[t]
+      SNOfall[t]=P[t]
     }  else {
       SNOmlt[t]= bmlt[t] * SNO[t-1] * ((Tsno[t]+MaxTemp[t])/2 - Tmlt) 
       SNOmlt[t]= min(SNOmlt[t],SNO[t-1])
@@ -35,7 +35,7 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
   WBData$Tsno=Tsno
   WBData$SNO=SNO
   WBData$SNOmlt=SNOmlt
-  WBData$SNOmlt=SNOfall
+  WBData$SNOfall=SNOfall
   rm(list=c("SNO", "SNOmlt", "Tsno", "SNOfall"))
   return(data.frame(Tsno=WBData$Tsno,SNO=WBData$SNO,SNOmlt=WBData$SNOmlt,SNOfall=WBData$SNOfall))
 }

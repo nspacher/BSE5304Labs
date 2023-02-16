@@ -378,6 +378,8 @@ TMWB=BasinData
 # 2) Calculate the Snow Accumulation and Melt via Function
 # 3) Run TMWB via Function 
 
+source("https://github.com/nspacher/BSE5304Labs/blob/main/R/TMWBFuncs.R")
+
 # Lets make one out of our Temperature Index Snow Model
 #
 
@@ -388,6 +390,12 @@ Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
 Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
 
 TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
+  WBData=TMWB
+  SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
+  bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
+  bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
+  Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
+  Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
   WBData$AvgTemp=(WBData$MaxTemp-WBData$MinTemp)/2
   WBData$bmlt = (bmlt6 + bmlt12)/2 + (bmlt6 - bmlt12)/2 * 
     sin(2*pi/365*(julian(WBData$date,origin = as.Date("2000-01-01"))-81))
@@ -398,6 +406,7 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
   WBData$SNOfall = 0  # Snow Fall (mm)
   attach(WBData)
   for (t in 2:length(date)){
+    SNOmlt[t]=0
     Tsno[t]= Tsno[t-1] * (1.0-Tlag) +  AvgTemp[t] * Tlag
     if(AvgTemp[t] < SFTmp){
       SNO[t]= SNO[t-1] + P[t]
@@ -418,7 +427,7 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
   WBData$SNO=SNO
   WBData$SNOmlt=SNOmlt
   WBData$SNOmlt=SNOfall
-  rm(list=c("SNO", "SNOmlt", "Tsno"))
+  rm(list=c("SNO", "SNOmlt", "Tsno", "SNOfall"))
   return(data.frame(Tsno=WBData$Tsno,SNO=WBData$SNO,SNOmlt=WBData$SNOmlt,SNOfall=WBData$SNOfall))
 }
 

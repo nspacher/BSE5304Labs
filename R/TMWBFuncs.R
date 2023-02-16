@@ -1,9 +1,9 @@
-
 soilwetting<-function(AWprev,dP_func,AWC_func){
   AW_func<-AWprev+dP_func
   excess_func<-0.0
   c(AW_func,excess_func)
 } 
+
 # soil drying function
 soildrying<-function(AWprev,dP_func,AWC_func){
   AW_func <- AWprev*exp(dP_func/AWC_func)

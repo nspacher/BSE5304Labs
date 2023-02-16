@@ -443,16 +443,13 @@ detach(TMWB)
 # Our PET Model we will borrow from EcoHydrology
 #
 ?PET_fromTemp
+attach(TMWB)
 TMWB$PET=PET_fromTemp(Jday=(1+as.POSIXlt(date)$yday),Tmax_C = MaxTemp,Tmin_C = MinTemp,
                       lat_radians = myflowgage$declat*pi/180) * 1000
 plot(date,TMWB$PET)
-
-
-# Our TMWB Model
-
-attach(TMWB)
 detach(TMWB)
 
+# Our TMWB Model
 
 TMWB$ET = TMWB$PET # in mm/day
 TMWB$AWC=(0.45-0.15)*1000 #Fld Cap = .45, Wilt Pt = .15, z=1000mm

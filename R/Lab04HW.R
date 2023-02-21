@@ -55,5 +55,12 @@ TMWB$Tsno=SNO_df$Tsno
 
 #TMWB modeling
 TMWB_df <- TMWBmodel(TMWB, fc=0.45, wp=0.1, z=1000, fcres=0.3587)
+TMWB$AW=TMWB_df$AW
+TMWB$Excess=TMWB_df$Excess
+TMWB$dp=TMWB_df$dp
+TMWB$ET=TMWB_df$ET
+TMWB$S=TMWB_df$S
+TMWB$Qpred=TMWB_df$Qpred
 
+#Storage Optimization
 

@@ -53,6 +53,7 @@ for (t in 2:length(date)){
 }
 TMWBdf$S=S
 TMWBdf$Qpred=Qpred # UPDATE vector BEFORE DETACHING
+plot(date,Qpred,type="l")
 detach(TMWBdf) # IMPORTANT TO DETACH
 rm(list=c("Qpred","S"))
 return(data.frame(AW=TMWBdf$AW, Excess=TMWBdf$Excess, dp=TMWBdf$dP, ET=TMWBdf$ET, S=TMWBdf$S, Qpred=TMWBdf$Qpred))

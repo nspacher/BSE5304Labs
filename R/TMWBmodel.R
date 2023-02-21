@@ -1,5 +1,5 @@
 #TMWB model
-TMWB <- function(TMWBdf, fc=0.45, wp=0.1, z=1000, fcres=0.3587){
+TMWBmodel <- function(TMWBdf, fc=0.45, wp=0.1, z=1000, fcres=0.3587){
 
 #calculate PET
 attach(TMWBdf)

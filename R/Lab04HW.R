@@ -5,7 +5,7 @@ pacman::p_load(ggplot2,dplyr,patchwork,rnoaa)
 pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
                rnoaa,raster,shapefiles,rgdal,elevatr,terra,progress,lubridate)
 pacman::p_load(EcoHydRology)
-
+LabNo="/Lab04"
 #directories
 myhomedir=Sys.getenv("HOME")
 datadir=paste0(myhomedir,"/data",LabNo)
@@ -54,6 +54,6 @@ TMWB$SNOfall=SNO_df$SNOfall
 TMWB$Tsno=SNO_df$Tsno
 
 #TMWB modeling
-TMWBmodel(TMWB, fc=0.45, wp=0.1, z=1000, fcres=0.3587)
+TMWB_df <- TMWBmodel(TMWB, fc=0.45, wp=0.1, z=1000, fcres=0.3587)
 
 

@@ -1,16 +1,6 @@
-#SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
-#bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
-#bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
-#Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
-#Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
 
 TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
-  #WBData=TMWB
-  #SFTmp = 3  # referred to as SFTMP in SWAT input (Table 1)
-  #bmlt6 = 4.5   # referred to as SMFMX in SWAT input (Table 1)
-  #bmlt12 = 0.0  # referred to as SMFMN in SWAT input adjusted for season
-  #Tmlt = SFTmp  # Assumed to be same as SnowFall Temperature
-  #Tlag = 1  # referred to as TIMP in SWAT input (Table 1)
+
   WBData$AvgTemp=(WBData$MaxTemp-WBData$MinTemp)/2
   WBData$bmlt = (bmlt6 + bmlt12)/2 + (bmlt6 - bmlt12)/2 * 
     sin(2*pi/365*(julian(WBData$date,origin = as.Date("2000-01-01"))-81))
@@ -25,9 +15,6 @@ TISnow=function(WBData,SFTmp=2,bmlt6=4.5,bmlt12=0.0,Tmlt=3,Tlag=1){
     Tsno[t]= Tsno[t-1] * (1.0-Tlag) +  AvgTemp[t] * Tlag
     if(AvgTemp[t] < SFTmp){
       SNO[t]= SNO[t-1] + P[t]
-      #
-      # Eeee... I forgot to save my snowfall!
-      #
       SNOfall[t]=P[t]
     }  else {
       SNOmlt[t]= bmlt[t] * SNO[t-1] * ((Tsno[t]+MaxTemp[t])/2 - Tmlt) 

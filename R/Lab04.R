@@ -543,6 +543,7 @@ plot(TMWB$date,P,col="black")
 lines(date,Qmm,type = "l",col="red")
 lines(date,Qpred,col="blue")
 detach(TMWB)
+
 #nse function
 NSE=function(Yobs,Ysim){
   return(1-sum((Yobs-Ysim)^2,na.rm=TRUE)/sum((Yobs-mean(Yobs, na.rm=TRUE))^2, na.rm=TRUE))

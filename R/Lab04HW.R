@@ -62,5 +62,64 @@ TMWB$ET=TMWB_df$ET
 TMWB$S=TMWB_df$S
 TMWB$Qpred=TMWB_df$Qpred
 
-#Storage Optimization
+#test plots
+Qplot <- ggplot(TMWB, aes(x=date))+
+  geom_line(aes(y=Qmm,color="Qmm"))+
+  geom_line(aes(y=Qpred,color="Qpred"))+
+  #geom_line(aes(y=Excess,color="Excess"))+
+  scale_color_hue(name=element_blank())+
+  labs(title = paste("NSE =",signif(NSE(TMWB$Qmm,TMWB$Qpred),digits=4)),y="Area Normalized Flow (mm/day)",x=element_blank())
+Qplot
+
+P_plot <- ggplot(TMWB, aes(date))+
+  geom_col(aes(y=Excess,fill="Excess"))+
+  geom_col(aes(y=P, fill="Precipitation"))+
+  geom_line(aes(y=ET,color="ET"))+
+  scale_y_continuous(name="Depth of Water (mm)",
+                     sec.axis=sec_axis(~.*(7), name="Available Soil Water (mm)")
+  )+
+  geom_line(aes(x=date,y=AW*(5/35),color="AW"))+
+  scale_fill_manual(name=element_blank(), values=c("Precipitation"="blue", "Excess"="red"))+
+  scale_color_manual(name=element_blank(),values=c("AW"="orange","ET"="darkgreen"))+
+  labs(x=element_blank())
+P_plot
+
+Qplot/P_plot
+
+#Storage Optimization for TMWB
+#nse function
+NSE <- function(Yobs,Ysim){
+  return(1-sum((Yobs-Ysim)^2,na.rm=TRUE)/sum((Yobs-mean(Yobs, na.rm=TRUE))^2, na.rm=TRUE))
+}
+
+ggplot(TMWB, aes(dp, Qmm))+
+  geom_point()
+
+TMWB_S=TMWB[(month(TMWB$date) > 5 
+                      & month(TMWB$date) < 11),]
+
+attach(TMWB_S)
+plot(dp,Qmm)
+points(dp,dp^2/(dp+60),col="red")  #Best S estimate visually
+points(dp,dp^2/(dp+45),col="blue")
+NSE(Qmm,dp^2/(dp+60))
+
+f <- function (x) {
+  Sest=x
+  NSE(Qmm,dp^2/(dp+Sest))
+}
+Sest <- optimize(f, c(30,60), tol = 0.0001,maximum = TRUE)$maximum
+plot(dp,Qmm)
+points(dp,dp^2/(dp+Sest),col="red") 
+########
+detach(TMWB_S)
+
+#CN model
+# CNavg = 75
+# IaFrac = 0.05
+# fnc_slope=0 
+# fnc_aspect=0
+# func_DAWC=.3
+# func_z=1000
+# fnc_fcres=.3
 

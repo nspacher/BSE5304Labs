@@ -64,11 +64,11 @@ TMWB$Qpred=TMWB_df$Qpred
 
 #test plots
 Qplot <- ggplot(TMWB, aes(x=date))+
-  geom_line(aes(y=Qmm,color="Qmm"))+
-  geom_line(aes(y=Qpred,color="Qpred"))+
+  geom_line(aes(y=Qmm,color="Observed"))+
+  geom_line(aes(y=Qpred,color="Predicted"))+
   #geom_line(aes(y=Excess,color="Excess"))+
   scale_color_hue(name=element_blank())+
-  labs(title = paste("NSE =",signif(NSE(TMWB$Qmm,TMWB$Qpred),digits=4)),y="Area Normalized Flow (mm/day)",x=element_blank())
+  labs(title = paste("TMWB Model; NSE =",signif(NSE(TMWB$Qmm,TMWB$Qpred),digits=4)),y="Streamflow (mm/day)",x=element_blank())
 Qplot
 
 P_plot <- ggplot(TMWB, aes(date))+
@@ -115,24 +115,48 @@ points(dp,dp^2/(dp+Sest),col="red")
 detach(TMWB_S)
 
 #CN model
-CNavg = 75
-IaFrac = 0.05
-fnc_slope=0
-fnc_aspect=0
-func_DAWC=.3
-func_z=1000
-fnc_fcres=.3
+# CNavg = 75
+# IaFrac = 0.05
+# fnc_slope=0
+# fnc_aspect=0
+# func_DAWC=.3
+# func_z=1000
+# fnc_fcres=.3
 
 source("https://raw.githubusercontent.com/nspacher/BSE5304Labs/main/R/CNModel.R") #CN model function
 CN_JO <- CNModel(BasinData, CNavg = 75,IaFrac = 0.05,fnc_slope=0,fnc_aspect=0,func_DAWC=.3,func_z=1000,
                  fnc_fcres=.3)
-CN_JO$date <- BasinData$date
-CN_JO$Qmm <- BasinData$Qmm
+# CN_JO$date <- BasinData$date
+# CN_JO$Qmm <- BasinData$Qmm
 
 CNQplot <- ggplot(CN_JO, aes(x=date))+
-  geom_line(aes(y=Qmm,color="Qmm"))+
-  geom_line(aes(y=Qpred,color="Qpred"))+
+  geom_line(aes(y=Qmm,color="Observed"))+
+  geom_line(aes(y=Qpred,color="Predicted"))+
   #geom_line(aes(y=Excess,color="Excess"))+
   scale_color_hue(name=element_blank())+
-  labs(title = paste("NSE =",signif(NSE(CN_JO$Qmm,CN_JO$Qpred),digits=4)),y="Area Normalized Flow (mm/day)",x=element_blank())
+  labs(title = paste("CNModel; NSE =",signif(NSE(CN_JO$Qmm,CN_JO$Qpred),digits=4)),y="Streamflow (mm/day)",x=element_blank())
 CNQplot
+
+Qplot + CNQplot +plot_layout(guides='collect')
+
+
+#x-y plots of predicted vs observed flow for both models
+CNQvObs <- ggplot(CN_JO,aes(Qmm,Qpred))+
+  geom_point()+
+  geom_abline(intercept=0,slope=1,color="red")+
+  labs(title="CN Model",x="Observed Streamflow (mm)",y="Predicted Streamflow (mm)")
+TMWBQvObs <- ggplot(TMWB,aes(Qmm,Qpred))+
+  geom_point()+
+  geom_abline(intercept=0,slope=1,color="red")+
+  labs(title="TMWB Model",x="Observed Streamflow (mm)",y="Predicted Streamflow (mm)")
+
+TMWBQvObs+CNQvObs
+
+#hydrographs 
+ggplot(TMWB, aes(date))+
+  geom_line(aes(y=Qpred,color="TMWB"))+
+  geom_line(data=CN_JO,aes(y=Qpred, color="CN Model"))+
+  scale_color_hue(name=element_blank())+
+  labs(x=element_blank(),y="Predicted Daily Streamflow (mm)")
+
+

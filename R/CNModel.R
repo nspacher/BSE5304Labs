@@ -90,5 +90,5 @@ return(data.frame(SNO=CNmodeldf$SNO, SNOmlt=CNmodeldf$SNOmlt, SnowfallWatEq_mm=C
                   SnowMelt_mm=CNmodeldf$SnowMelt_mm, Albedo=CNmodeldf$Albedo, PET=CNmodeldf$PET,
                   CNavg=CNmodeldf$CNavg, SSCNavg=CNmodeldf$SSCNavg, SSCN=CNmodeldf$SSCN, Ia=CNmodeldf$Ia,
                   ET=CNmodeldf$ET, dp=CNmodeldf$dP, AW=CNmodeldf$AW, Excess=CNmodeldf$Excess, S=CNmodeldf$S, 
-                  Qpred=CNmodeldf$Qpred))
+                  Qpred=CNmodeldf$Qpred, date=CNmodeldf$date, Qmm=CNmodeldf$Qmm))
 }

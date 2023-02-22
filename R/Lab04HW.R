@@ -115,11 +115,24 @@ points(dp,dp^2/(dp+Sest),col="red")
 detach(TMWB_S)
 
 #CN model
-# CNavg = 75
-# IaFrac = 0.05
-# fnc_slope=0 
-# fnc_aspect=0
-# func_DAWC=.3
-# func_z=1000
-# fnc_fcres=.3
+CNavg = 75
+IaFrac = 0.05
+fnc_slope=0
+fnc_aspect=0
+func_DAWC=.3
+func_z=1000
+fnc_fcres=.3
 
+source("https://raw.githubusercontent.com/nspacher/BSE5304Labs/main/R/CNModel.R") #CN model function
+CN_JO <- CNModel(BasinData, CNavg = 75,IaFrac = 0.05,fnc_slope=0,fnc_aspect=0,func_DAWC=.3,func_z=1000,
+                 fnc_fcres=.3)
+CN_JO$date <- BasinData$date
+CN_JO$Qmm <- BasinData$Qmm
+
+CNQplot <- ggplot(CN_JO, aes(x=date))+
+  geom_line(aes(y=Qmm,color="Qmm"))+
+  geom_line(aes(y=Qpred,color="Qpred"))+
+  #geom_line(aes(y=Excess,color="Excess"))+
+  scale_color_hue(name=element_blank())+
+  labs(title = paste("NSE =",signif(NSE(CN_JO$Qmm,CN_JO$Qpred),digits=4)),y="Area Normalized Flow (mm/day)",x=element_blank())
+CNQplot

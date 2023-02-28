@@ -123,7 +123,7 @@ outDEoptim <- DEoptim(TMWBopt, lower, upper, DEoptim.control(NP = 80,
                                                              itermax = 10, F = 1.2, CR = 0.7))
 
 
-
+TMWB_df <- TMWBmodel(TMWB, fc=0.45, wp=0.1, z=1000, fcres=0.3587, SFTmp = 1, bmlt6 = 1.4, bmlt12 = 0, Tmlt = 3, Tlag=1)
 
 
 

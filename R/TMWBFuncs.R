@@ -17,3 +17,8 @@ soil_wetting_above_capacity<-function(AWprev,dP_func,AWC_func){
   excess_func<-AWprev+dP_func-AWC_func
   c(AW_func,excess_func)
 }
+
+# NSE from Class
+NSE=function(Yobs,Ysim){
+  return(1-sum((Yobs-Ysim)^2,na.rm=TRUE)/sum((Yobs-mean(Yobs, na.rm=TRUE))^2, na.rm=TRUE))
+}

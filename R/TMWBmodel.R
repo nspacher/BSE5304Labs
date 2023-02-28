@@ -1,5 +1,15 @@
 #TMWB model
-TMWBmodel <- function(TMWBdf, fc=0.45, wp=0.1, z=1000, fcres=0.3587){
+source("https://raw.githubusercontent.com/nspacher/BSE5304Labs/main/R/TMWBFuncs.R") #soil wetting functions
+source("https://raw.githubusercontent.com/nspacher/BSE5304Labs/main/R/TISnow.R") #Temperature Index snow model function
+
+TMWBmodel <- function(TMWBdf, fc=0.45, wp=0.1, z=1000, fcres=0.3587, SFTmp=1, bmlt6=1.4, bmlt12=0, Tmlt=3, Tlag=1){
+
+#Modeling snow
+SNO_df=TISnow(TMWB,SFTmp=SFTmp,bmlt6=bmlt6,bmlt12=bmlt12,Tmlt=Tmlt,Tlag=Tlag)
+TMWBdf$SNO=SNO_df$SNO
+TMWBdf$SNOmlt=SNO_df$SNOmlt
+TMWBdf$SNOfall=SNO_df$SNOfall
+TMWBdf$Tsno=SNO_df$Tsno
 
 #calculate PET
 attach(TMWBdf)

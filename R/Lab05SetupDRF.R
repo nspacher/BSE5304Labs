@@ -47,10 +47,10 @@ system("git config pull.rebase false")
 setwd(srcdir)
 #detach("package:EcoHydRology", unload = TRUE)
 # remove.packages("EcoHydRology", lib="~/R/x86_64-pc-linux-gnu-library/4.2")
-system("svn checkout svn://scm.r-forge.r-project.org/svnroot/ecohydrology/"); 
-install.packages(c("ecohydrology/pkg/EcoHydRology/"),repos = NULL)
+#system("svn checkout svn://scm.r-forge.r-project.org/svnroot/ecohydrology/"); 
+#install.packages(c("ecohydrology/pkg/EcoHydRology/"),repos = NULL)
 pacman::p_load(EcoHydRology)
-install.packages(c("ecohydrology/pkg/SWATmodel/"),repos = NULL)
+#install.packages(c("ecohydrology/pkg/SWATmodel/"),repos = NULL)
 pacman::p_load(SWATmodel)
 
 

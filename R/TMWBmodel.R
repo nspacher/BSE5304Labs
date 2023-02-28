@@ -39,7 +39,7 @@ for (t in 2:length(AW)){
   }
   AW[t]<-values[1]
   Excess[t]<-values[2]
-  print(t)
+  #print(t)
 }
 TMWBdf$AW=AW
 TMWBdf$Excess=Excess

@@ -9,7 +9,7 @@ rm(list=objects()) # Removes ALL the objects… so be careful here.
 #
 # What is going to change from use case to use case 
 LabNo="/Lab05"
-myflowgage_id="14138870"
+myflowgage_id="0205551460"
 #
 # What needs to be loaded
 #
@@ -123,17 +123,35 @@ CNopt <- function(x){
   return(1-NSE(Yobs = outCN$Qmm, Ysim = outCN$Qpred))
 }
 
-lower <- c(0.09, 0.05, 300, 0.1, 1, 0.1, 0.1, 1, 0.1)
-upper <- c(0.45, 0.22, 3000, 0.95, 6, 5, 5, 3, 1)
+#TMWB lower and upper vectors
+tlower <- c(0.09, 0.05, 300, 0.1, 1, 0.1, 0.1, 1, 0.1)
+tupper <- c(0.45, 0.22, 3000, 0.95, 6, 5, 5, 3, 1)
 
-outDEoptim <- DEoptim(TMWBopt, lower, upper, DEoptim.control(NP = 90,
-                                                             itermax = 20, F = 1.2, CR = 0.7))
+outDEoptim <- DEoptim(TMWBopt, tlower, tupper, DEoptim.control(NP = 90,
+                                                             itermax = 100, F = 1.2, CR = 0.7))
 
 
 plot(outDEoptim$member$bestvalit,col="black")
 
 plot(outDEoptim)
+bestmemit <- as.data.frame(outDEoptim$member$bestmemit)
+bestmemit$iteration = c(1:100)
+bestmemit <- rename(bestmemit, "fc"=par1, "wp"=par2, "z"=par3, "fcres"=par4,"SFTmp"=par5,"bmlt6"=par6,"bmlt7"=par7,"Tmlt"=par8, "Tlag"=par9)
+ggplot(bestmemit, aes(iteration, Tlag))+
+  geom_point()
 
+CNout <- CNModel(BasinData, CNavg=75, IaFrac=0.1, fnc_slope=0, fnc_aspect=0, func_DAWC=0.3, func_z=1000, fnc_fcres=0.3)
+#CN lower and upper vecctors
+CNlower <- c(70,0.05,0,0,0.2,1000,0.1)
+CNupper <- c(80,0.2,1,360,0.4,3000,0.95)
 
+CNoutDEoptim <- DEoptim(CNopt, CNlower, CNupper, DEoptim.control(NP = 70,
+                                                               itermax = 100, F = 1.2, CR = 0.7))
 
+plot(CNoutDEoptim$member$bestvalit,col="black")
+plot(CNoutDEoptim)
 
+CNpars <- as.data.frame(CNoutDEoptim$member$bestmemit)
+CNpars <- rename(CNpars, "CNavg"=par1, "IaFrac"=par2, "slope"=par3, "aspect"=par4, "DAWC"=par5,"z"=par6,"fcres"=par7)
+CNpars$iterations=c(1:100)
+ggplot(CNpars, aes(iterations, fcres))+geom_point()

@@ -90,6 +90,8 @@ TMWB=BasinData
 source("https://raw.githubusercontent.com/nspacher/BSE5304Labs/main/R/TMWBmodel.R")
 source("https://raw.githubusercontent.com/nspacher/BSE5304Labs/main/R/CNModel.R")
 
+#TMWB_df <- TMWBmodel(TMWB, fc=0.45, wp=0.1, z=1000, fcres=0.3587, SFTmp = 1, bmlt6 = 1.4, bmlt12 = 0, Tmlt = 3, Tlag=1)
+
 TMWBopt <- function(x){
   x1 <- x[1]
   x2 <- x[2]
@@ -116,14 +118,16 @@ CNopt <- function(x){
   return(1-NSE(Yobs = outCN$Qmm, Ysim = outCN$Qpred))
 }
 
-lower <- c(0.09, 0.05, 300, 0.01, 1, 0.1, 0.1, 1, 0.1)
+lower <- c(0.09, 0.05, 300, 0.1, 1, 0.1, 0.1, 1, 0.1)
 upper <- c(0.45, 0.22, 3000, 0.95, 6, 5, 5, 3, 1)
 
-outDEoptim <- DEoptim(TMWBopt, lower, upper, DEoptim.control(NP = 80,
-                                                             itermax = 10, F = 1.2, CR = 0.7))
+outDEoptim <- DEoptim(TMWBopt, lower, upper, DEoptim.control(NP = 90,
+                                                             itermax = 20, F = 1.2, CR = 0.7))
 
 
-TMWB_df <- TMWBmodel(TMWB, fc=0.45, wp=0.1, z=1000, fcres=0.3587, SFTmp = 1, bmlt6 = 1.4, bmlt12 = 0, Tmlt = 3, Tlag=1)
+plot(outDEoptim$member$bestvalit,col="black")
+
+plot(outDEoptim)
 
 
 

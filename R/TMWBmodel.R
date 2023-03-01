@@ -68,3 +68,4 @@ detach(TMWBdf) # IMPORTANT TO DETACH
 rm(list=c("Qpred","S"))
 return(data.frame(date=TMWBdf$date, AW=TMWBdf$AW, Excess=TMWBdf$Excess, dp=TMWBdf$dP, ET=TMWBdf$ET, S=TMWBdf$S,Qmm=TMWBdf$Qmm, Qpred=TMWBdf$Qpred))
 }
+#asdfasdfasdf

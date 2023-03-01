@@ -9,7 +9,7 @@ rm(list=objects()) # Removes ALL the objects… so be careful here.
 #
 # What is going to change from use case to use case 
 LabNo="/Lab05"
-myflowgage_id="0205551460"  # Old Friendly Gage
+myflowgage_id="14138870"
 #
 # What needs to be loaded
 #
@@ -90,7 +90,12 @@ TMWB=BasinData
 source("https://raw.githubusercontent.com/nspacher/BSE5304Labs/main/R/TMWBmodel.R")
 source("https://raw.githubusercontent.com/nspacher/BSE5304Labs/main/R/CNModel.R")
 
-#TMWB_df <- TMWBmodel(TMWB, fc=0.45, wp=0.1, z=1000, fcres=0.3587, SFTmp = 1, bmlt6 = 1.4, bmlt12 = 0, Tmlt = 3, Tlag=1)
+TMWB_df <- TMWBmodel(TMWB, fc=0.45, wp=0.1, z=1000, fcres=0.3587, SFTmp = 1, bmlt6 = 1.4, bmlt12 = 0, Tmlt = 3, Tlag=1)
+ggplot(TMWB_df, aes(date, Qpred, color = "Qpred"))+
+  geom_line()+
+  geom_line(aes(y=Qmm, color="Qmm"))+
+  labs(title=NSE(Yobs = TMWB_df$Qmm, Ysim = TMWB_df$Qpred))
+
 
 TMWBopt <- function(x){
   x1 <- x[1]

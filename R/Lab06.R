@@ -6,7 +6,8 @@ rm(list=objects()) # Removes ALL the objects… so be careful here.
 #
 # What is going to change from use case to use case 
 LabNo="/Lab06"
-myflowgage_id="0205551460"  # Old Friendly Gage
+myflowgage_id="14138870" #FIR CREEK NEAR BRIGHTWOOD, OR
+# "0205551460"  # Old Friendly Gage
 #
 # What needs to be loaded
 #
@@ -49,8 +50,7 @@ pacman::p_load(operators,topmodel,DEoptim,soilDB,sp,curl,httr,
 #--------------source CN model function from a previous lab----------
 setwd(datadir)
 source("https://raw.githubusercontent.com/vtdrfuka/BSE5304_2022/main/functions/CNmodel")
-#LITTLE OTTER CREEK AT FERRISBURG, VT.
-myflowgage_id="04282650"
+#myflowgage_id="04282650" LITTLE OTTER CREEK AT FERRISBURG, VT.
 myflowgage=get_usgs_gage(myflowgage_id, begin_date = "2010-01-01",
                          end_date = "2023-01-01")
 myflowgage$flowdata$Qmm = myflowgage$flowdata$flow/myflowgage$area/10^3
@@ -395,19 +395,18 @@ ggplot(plot_frame) +
 
 
 
-CNmodelnew <- CN_DF
 
-dat=data.frame(Qm3ps=CNmodelnew$Qmm,
-                 Jday=strptime(CNmodelnew$date,"%Y-%m-%d")$yday+1,                 
-                Precip=CNmodelnew$P,TMX=CNmodelnew$MaxTemp,TMN=CNmodelnew$MinTemp,
-                 jdate=julian(CNmodelnew$date))
+dat=data.frame(Qm3ps=CN_DF$Qmm,
+                 Jday=strptime(CN_DF$date,"%Y-%m-%d")$yday+1,                 
+                Precip=CN_DF$P,TMX=CN_DF$MaxTemp,TMN=CN_DF$MinTemp,
+                 jdate=julian(CN_DF$date))
 # Need the previous days flow
 # The NN for this example requires the previous days flow… remember this for 
 # the homework questions. 
 dat$Qm3ps_lag=dplyr::lag(dat$Qm3ps)
 dat[is.na(dat)]=0
-View(dat)
-head(dat)
+#View(dat)
+#head(dat)
 datmax <- apply(dat, 2, max)
 datmin <- apply(dat, 2, min)
 # now split the datat into train, validation and test sets.
@@ -428,7 +427,7 @@ set.seed(2)
 net <- neuralnet(Qm3ps ~ Qm3ps_lag+Precip+jdate+Jday+TMX+TMN,
                    data = train,
                    hidden = c(6, 3), # can adjust here
-                   threshold = 0.0060335, # if you network does not run, 
+                   threshold = 0.0009335, # if you network does not run, 
                    #                         try turning this up just a little
                    stepmax = 1e+05, # can adjust if you don't converge
                    rep = 1,
@@ -473,6 +472,7 @@ nn_prediction = predict(net, test[, c("Qm3ps_lag","Precip","jdate","Jday","TMX",
 # un-scale
 unscaled_test_prediction = (nn_prediction * (max(dat$Qm3ps) - min(dat$Qm3ps))) + min(dat$Qm3ps)
 test_jdate = (test[,c("jdate")] * (max(dat$jdate) - min(dat$jdate))) + min(dat$jdate)
+plot(test_jdate,unscaled_test_prediction)
 #===================================================
 #           Plot the predictions for both train and test
 #===================================================
@@ -502,3 +502,102 @@ NN_NSE<- NSeff(comparedf$Qmm, comparedf$NNFlow)
 print(NN_NSE)
 CNmodelnew_NSE<- NSeff(CNmodelnew$Qmm, CNmodelnew$Qpred)
 print(CNmodelnew_NSE)
+
+
+#======================================================
+#NN model no lag flow
+dat=data.frame(Qm3ps=CN_DF$Qmm,
+               Jday=strptime(CN_DF$date,"%Y-%m-%d")$yday+1,                 
+               Precip=CN_DF$P,TMX=CN_DF$MaxTemp,TMN=CN_DF$MinTemp,
+               jdate=julian(CN_DF$date))
+dat[is.na(dat)]=0
+#View(dat)
+#head(dat)
+datmax <- apply(dat, 2, max)
+datmin <- apply(dat, 2, min)
+# now split the datat into train, validation and test sets.
+scaled <- scale(dat, center = datmin, scale = datmax - datmin)
+
+# sub sample to get the test and train set
+index <- seq(1, nrow(dat))
+train_index <- sample(index, 0.8*length(index))
+train <- scaled[train_index,]
+test <- scaled[-train_index,]
+#===================================================
+#             Now, setup and train the neural network!!!
+#===================================================
+# first set a random seed to a lucky number, but it does give results!
+
+set.seed(2)
+# setup and train the neural network
+net <- neuralnet(Qm3ps ~ Precip+jdate+Jday+TMX+TMN,
+                 data = train,
+                 hidden = c(6, 3), # can adjust here
+                 threshold = 0.0009335, # if you network does not run, 
+                 #                         try turning this up just a little
+                 stepmax = 1e+05, # can adjust if you don't converge
+                 rep = 1,
+                 #startweights = NULL,
+                 #learningrate.limit = NULL,
+                 #learningrate.factor = list(minus = 0.5, plus = 1.2),
+                 learningrate = 0.027,
+                 lifesign = "full",
+                 #lifesign.step = 1000,
+                 algorithm = "backprop",
+                 err.fct = 'sse',
+                 act.fct = "logistic",
+                 linear.output = FALSE,
+                 exclude = NULL,
+                 constant.weights = NULL)
+#===================================================
+#                     Plot the Structure of the Neural Net
+#===================================================
+# View the structure of the neural net
+plot(net)
+#===================================================
+#             Make Predictions to See how the neural network did
+#===================================================
+# look at predictions from the train and test sets
+#  to see how the network did
+
+# make the predictions on the train data
+nn_prediction = predict(net, train[
+  ,c("Precip","jdate","Jday","TMX","TMN")])
+
+# un-scale the predictions
+unscaled_train_prediction = (nn_prediction * (max(dat$Qm3ps) - min(dat$Qm3ps))) + min(dat$Qm3ps)
+
+train_jdate = (train[,c("jdate")] * (max(dat$jdate) - min(dat$jdate))) + min(dat$jdate)
+plot(train_jdate,unscaled_train_prediction)
+# But, notice how predictions are created
+lines(train_jdate,unscaled_train_prediction,type="l")
+
+# make predictions on the test data
+nn_prediction = predict(net, test[, c("Precip","jdate","Jday","TMX","TMN")])
+
+# un-scale
+unscaled_test_prediction = (nn_prediction * (max(dat$Qm3ps) - min(dat$Qm3ps))) + min(dat$Qm3ps)
+test_jdate = (test[,c("jdate")] * (max(dat$jdate) - min(dat$jdate))) + min(dat$jdate)
+plot(test_jdate,unscaled_test_prediction)
+#===================================================
+#           Plot the predictions for both train and test
+#===================================================
+# plot the train and test and predictions
+train_fit <- data.frame(NNjdate = train_jdate, NNFlow = unscaled_train_prediction, color="red",data_set = 'train')
+test_fit = data.frame(NNjdate = test_jdate, NNFlow  = unscaled_test_prediction, color="green",data_set = 'test')
+# Build a results dataframe for the NN
+NNFlowModel=rbind(train_fit,test_fit)
+NNFlowModel=NNFlowModel[order(NNFlowModel$NNjdate),]
+#
+# Rebuild a date from Julian Date
+NNFlowModel$date=as.Date(NNFlowModel$NNjdate,origin = as.Date("1970-01-01"))
+
+# Neatly combine results into a single dataframe.
+NNFlowModel_test=subset(NNFlowModel,data_set=="test")
+NNFlowModel_train=subset(NNFlowModel,data_set=="train")
+plot(CNmodelnew$date, CNmodelnew$Qmm,type="l",col="black")
+lines(NNFlowModel_train$date,NNFlowModel_train$NNFlow,col="red",type="l")
+lines(NNFlowModel_test$date,NNFlowModel_test$NNFlow,col="green",type="l")
+# Compare this NN Model to that of Lab12
+lines(CNmodelnew$date, CNmodelnew$Qpred,type="l",col="blue")
+legend("topleft",legend = c("Observed Flow","NN Train Flow","NN Test Flow", "CN_Model Flow"),col = c("black","red","green","blue"),lty = 1:2, cex = 0.6)

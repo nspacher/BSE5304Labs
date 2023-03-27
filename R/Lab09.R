@@ -83,11 +83,11 @@ end.date = "2017-11-01" )   # to still not frozen
   return(USGS)
 }
 
-USGS02056000=make_usgs_gage_list(siteNo = "02056000")
-USGS0205551460=make_usgs_gage_list(siteNo ="0205551460")
-USGS02055100=make_usgs_gage_list(siteNo ="02055100")
-USGS02055000=make_usgs_gage_list(siteNo ="02055000")
-USGS02054530=make_usgs_gage_list(siteNo ="02054530")
+USGS02056000=make_usgs_gage_list(siteNo = "02056000") #Roanoke River at Niagra, bottom gage
+USGS0205551460=make_usgs_gage_list(siteNo ="0205551460") #Lick run
+USGS02055100=make_usgs_gage_list(siteNo ="02055100") #Tinker Creek
+USGS02055000=make_usgs_gage_list(siteNo ="02055000") #Roanoke River at Roanoke
+USGS02054530=make_usgs_gage_list(siteNo ="02054530") #Roanoke River at Glenvar
 
 
 ###############
@@ -153,6 +153,19 @@ points(USGS02056000$flowdata$X_00060_00000,USGS02056000$flowdata$X_00065_00000,
 USGS02056000$flowdata$depth_m=USGS02056000$flowdata$X_00065_00000*0.3048 # m/ft depth
 
 
+###############################################
+#####   HW1
+###############################################
+#fixing rating curve for lick run gage
+USGS0205551460[["rating"]]=readNWISrating(USGS0205551460$site$site_no)
+USGS0205551460$flowdata$depth_ft=approx(USGS0205551460$rating$DEP,
+                                           USGS0205551460$rating$INDEP, xout = USGS0205551460$flowdata$X_00060_00000, ties = min)$y
+
+View(USGS0205551460$flowdata)
+USGS0205551460$flowdata$depth_m=USGS0205551460$flowdata$depth_ft*0.3048 # m/ft depth
+plot(USGS0205551460$flowdata$cms, USGS0205551460$flowdata$depth_m)
+
+
 #####################################
 #from gdistance package
 # A quick readthrough of the Example 1: Hiking around Maunga Whau
@@ -161,7 +174,7 @@ USGS02056000$flowdata$depth_m=USGS02056000$flowdata$X_00065_00000*0.3048 # m/ft 
 # Set the starting and ending locations
 # determine the river reach length and slope using the gdistance package.
 #
-A=SpatialPoints(USGS0205551460$site)# Up gradient site Lick Run
+A=SpatialPoints(USGS02055000$site)# Up gradient site Lick Run
 B=SpatialPoints(USGS02056000$site) # Down gradient site ROA River atNiagara
 proj4string(A)=proj4_ll
 proj4string(B)=proj4_ll
@@ -187,57 +200,76 @@ plot(AtoB,add=T)
 plot(streams_utm,col="blue",add=T)
 plot(AtoB,add=T)
 SpatialLinesLengths(AtoB)
-USGS0205551460$site$L=SpatialLinesLengths(AtoB) # km to m
-USGS0205551460$site$L # reach length in m
+USGS02055000$site$L=SpatialLinesLengths(AtoB) # km to m
+USGS02055000$site$L # reach length in m
 #
 #
 # Getting slope, we will extract the slope for points A and B from the DEM and # divide the difference by the length in m, this gives us a much better 
 # estimate of slope than taking the point slopes at the gage site
 #
-USGS0205551460$site$slope=(extract(mydem,A_utm)-
-                               extract(mydem,B_utm))/USGS0205551460$site$L
-USGS0205551460$site$slope
+USGS02055000$site$slope=(extract(mydem,A_utm)-
+                               extract(mydem,B_utm))/USGS02055000$site$L
+USGS02055000$site$slope
 
 # ck
-USGS0205551460$flowdata$ck = 5/3*(sqrt(USGS0205551460$site$slope)/USGS0205551460$site$man_n)*
-  USGS0205551460$flowdata$depth_m^(2/3)
+USGS02055000$flowdata$ck = 5/3*(sqrt(USGS02055000$site$slope)/USGS02055000$site$man_n)*
+  USGS02055000$flowdata$depth_m^(2/3)
   # ANS
-  mean(USGS0205551460$flowdata$ck,na.rm=T)
+  mean(USGS02055000$flowdata$ck,na.rm=T)
 # [1] 2.547238 for this example, confirm this result
-USGS0205551460$flowdata$dt = USGS0205551460$site$L/USGS0205551460$flowdata$ck
-  mean(USGS0205551460$flowdata$dt,na.rm=T)
+USGS02055000$flowdata$dt = USGS02055000$site$L/USGS02055000$flowdata$ck
+  mean(USGS02055000$flowdata$dt,na.rm=T)
 # [1] 6328.655  for this example, confirm this result
 
-plot(USGS0205551460$flowdata$dateTime,USGS0205551460$flowdata$dt)
-USGS0205551460$flowdata$outTime=USGS0205551460$flowdata$dateTime+USGS0205551460$flowdata$dt
+plot(USGS02055000$flowdata$dateTime,USGS02055000$flowdata$dt)
+USGS02055000$flowdata$outTime=USGS02055000$flowdata$dateTime+USGS02055000$flowdata$dt
+
+#test celerity function
+#test_celerity <- celerity(Up_gage = USGS0205551460, Down_gage = USGS02056000)
+
+
 
 # Find the beginning of  Waves assuming a new wave starts at 110% of prior 
 # flow. This might need to change for your homework
-WaveStartDecPercent=1.10
-USGS0205551460$flowdata$newwave=
-  USGS0205551460$flowdata$cms *WaveStartDecPercent < data.table::shift(USGS0205551460$flowdata$cms)
-summary(USGS0205551460$flowdata$newwave)
+WaveStartDecPercent=1.05
+USGS02055000$flowdata$newwave=
+  USGS02055000$flowdata$cms *WaveStartDecPercent < data.table::shift(USGS02055000$flowdata$cms)
+summary(USGS02055000$flowdata$newwave)
 # Add plot of the point found
-len=length(USGS0205551460$flowdata$newwave)
-USGS0205551460$flowdata$newwave[is.na(USGS0205551460$flowdata$newwave)]=F
+len=length(USGS02055000$flowdata$newwave)
+USGS02055000$flowdata$newwave[is.na(USGS02055000$flowdata$newwave)]=F
 # Removes repeated finds by going through loop backwards
 for (i in seq(len,2)){
   print(i)
-  if(USGS0205551460$flowdata$newwave[i]==T &
-     USGS0205551460$flowdata$newwave[i-1]==T){
-    USGS0205551460$flowdata$newwave[i]=F
+  if(USGS02055000$flowdata$newwave[i]==T &
+     USGS02055000$flowdata$newwave[i-1]==T){
+    USGS02055000$flowdata$newwave[i]=F
   }
 }
-plot(USGS0205551460$flowdata$dateTime,USGS0205551460$flowdata$cms,type="l")
-points(USGS0205551460$flowdata$dateTime[USGS0205551460$flowdata$newwave],
-         USGS0205551460$flowdata$cms[USGS0205551460$flowdata$newwave],col=2)
+plot(USGS02055000$flowdata$dateTime,USGS02055000$flowdata$cms,type="l")
+points(USGS02055000$flowdata$dateTime[USGS02055000$flowdata$newwave],
+         USGS02055000$flowdata$cms[USGS02055000$flowdata$newwave],col=2)
 
 # Find the time locations where waves begin
-which(USGS0205551460$flowdata$newwave == TRUE)
-plot(USGS0205551460$flowdata$dateTime,USGS0205551460$flowdata$cms,
-       type="l",xlim=c(USGS0205551460$flowdata$dateTime[1109],
-                       USGS0205551460$flowdata$dateTime[1109+200]))
-lines(USGS0205551460$flowdata$outTime,USGS0205551460$flowdata$cms,col=2)
+which(USGS02055000$flowdata$newwave == TRUE)
+
+#Tinker Creek plot
+plot(USGS02055100$flowdata$dateTime,USGS02055100$flowdata$cms,
+       type="l",xlim=c(USGS02055100$flowdata$dateTime[400],
+                       USGS02055100$flowdata$dateTime[414+200]))
+lines(USGS02055100$flowdata$outTime,USGS02055100$flowdata$cms,col=2)
+
+#Glenvar plot
+plot(USGS02054530$flowdata$dateTime,USGS02054530$flowdata$cms,
+     type="l",xlim=c(USGS02054530$flowdata$dateTime[420],
+                     USGS02054530$flowdata$dateTime[467+200]))
+lines(USGS02054530$flowdata$outTime,USGS02054530$flowdata$cms,col=2)
+
+#Roanoke at Roanoke plot
+plot(USGS02055000$flowdata$dateTime,USGS02055000$flowdata$cms,
+     type="l",xlim=c(USGS02055000$flowdata$dateTime[16934],
+                     USGS02055000$flowdata$dateTime[16934+100]))
+lines(USGS02055000$flowdata$outTime,USGS02055000$flowdata$cms,col=2)
 
 
 

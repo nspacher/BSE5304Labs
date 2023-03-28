@@ -178,7 +178,7 @@ plot(USGS0205551460$flowdata$cms, USGS0205551460$flowdata$depth_m)
 # Set the starting and ending locations
 # determine the river reach length and slope using the gdistance package.
 #
-A=SpatialPoints(USGS08279000$site)# Up gradient 
+A=SpatialPoints(USGS08276300$site)# Up gradient 
 B=SpatialPoints(USGS08279500$site) # Down gradient site 
 proj4string(A)=proj4_ll
 proj4string(B)=proj4_ll
@@ -204,29 +204,29 @@ plot(AtoB,add=T)
 plot(streams_utm,col="blue",add=T)
 plot(AtoB,add=T)
 SpatialLinesLengths(AtoB)
-USGS08279000$site$L=SpatialLinesLengths(AtoB) # km to m
-USGS08279000$site$L # reach length in m
+USGS08276300$site$L=SpatialLinesLengths(AtoB) # km to m
+USGS08276300$site$L # reach length in m
 #
 #
 # Getting slope, we will extract the slope for points A and B from the DEM and # divide the difference by the length in m, this gives us a much better 
 # estimate of slope than taking the point slopes at the gage site
 #
-USGS08279000$site$slope=(raster::extract(mydem,A_utm)-
-                               raster::extract(mydem,B_utm))/USGS08279000$site$L
-USGS08279000$site$slope
+USGS08276300$site$slope=(raster::extract(mydem,A_utm)-
+                               raster::extract(mydem,B_utm))/USGS08276300$site$L
+USGS08276300$site$slope
 
 # ck
-USGS08279000$flowdata$ck = 5/3*(sqrt(USGS08279000$site$slope)/USGS08279000$site$man_n)*
-  USGS08279000$flowdata$depth_m^(2/3)
+USGS08276300$flowdata$ck = 5/3*(sqrt(USGS08276300$site$slope)/USGS08276300$site$man_n)*
+  USGS08276300$flowdata$depth_m^(2/3)
   # ANS
-  mean(USGS08279000$flowdata$ck,na.rm=T)
+  mean(USGS08276300$flowdata$ck,na.rm=T)
 # [1] 2.547238 for this example, confirm this result
-USGS08279000$flowdata$dt = USGS08279000$site$L/USGS08279000$flowdata$ck
-  mean(USGS08279000$flowdata$dt,na.rm=T)
+USGS08276300$flowdata$dt = USGS08276300$site$L/USGS08276300$flowdata$ck
+  mean(USGS08276300$flowdata$dt,na.rm=T)
 # [1] 6328.655  for this example, confirm this result
 
-plot(USGS08279000$flowdata$dateTime,USGS08279000$flowdata$dt)
-USGS08279000$flowdata$outTime=USGS08279000$flowdata$dateTime+USGS08279000$flowdata$dt
+plot(USGS08276300$flowdata$dateTime,USGS08276300$flowdata$dt)
+USGS08276300$flowdata$outTime=USGS08276300$flowdata$dateTime+USGS08276300$flowdata$dt
 
 plot(USGS02055100$flowdata$dateTime,USGS02055100$flowdata$dt,main="tinker") #tinker
 plot(USGS02054530$flowdata$dateTime,USGS02054530$flowdata$dt,main="glenvar") #glenvar
@@ -239,26 +239,26 @@ plot(USGS02055000$flowdata$dateTime,USGS02055000$flowdata$dt,main="roanoke") #ro
 # Find the beginning of  Waves assuming a new wave starts at 110% of prior 
 # flow. This might need to change for your homework
 WaveStartDecPercent=1.1
-USGS08279000$flowdata$newwave=
-  USGS08279000$flowdata$cms *WaveStartDecPercent < data.table::shift(USGS08279000$flowdata$cms)
-summary(USGS08279000$flowdata$newwave)
+USGS08276300$flowdata$newwave=
+  USGS08276300$flowdata$cms *WaveStartDecPercent < data.table::shift(USGS08276300$flowdata$cms)
+summary(USGS08276300$flowdata$newwave)
 # Add plot of the point found
-len=length(USGS08279000$flowdata$newwave)
-USGS08279000$flowdata$newwave[is.na(USGS08279000$flowdata$newwave)]=F
+len=length(USGS08276300$flowdata$newwave)
+USGS08276300$flowdata$newwave[is.na(USGS08276300$flowdata$newwave)]=F
 # Removes repeated finds by going through loop backwards
 for (i in seq(len,2)){
   print(i)
-  if(USGS08279000$flowdata$newwave[i]==T &
-     USGS08279000$flowdata$newwave[i-1]==T){
-    USGS08279000$flowdata$newwave[i]=F
+  if(USGS08276300$flowdata$newwave[i]==T &
+     USGS08276300$flowdata$newwave[i-1]==T){
+    USGS08276300$flowdata$newwave[i]=F
   }
 }
-plot(USGS08279000$flowdata$dateTime,USGS08279000$flowdata$cms,type="l")
-points(USGS08279000$flowdata$dateTime[USGS08279000$flowdata$newwave],
-         USGS08279000$flowdata$cms[USGS08279000$flowdata$newwave],col=2)
+plot(USGS08276300$flowdata$dateTime,USGS08276300$flowdata$cms,type="l")
+points(USGS08276300$flowdata$dateTime[USGS08276300$flowdata$newwave],
+         USGS08276300$flowdata$cms[USGS08276300$flowdata$newwave],col=2)
 
 # Find the time locations where waves begin
-which(USGS08279000$flowdata$newwave == TRUE)
+which(USGS08276300$flowdata$newwave == TRUE)
 
 #Tinker Creek plot
 plot(USGS02055100$flowdata$dateTime,USGS02055100$flowdata$cms,
@@ -289,6 +289,17 @@ USGS02055100$site$slope #tinker
 USGS02054530$site$slope #glenvar
 USGS02055000$site$slope #roanoke
 
+#dt 
+mean(USGS02055100$flowdata$dt) #tinker
+mean(USGS02054530$flowdata$dt) #glenvar
+mean(USGS02055000$flowdata$dt,na.rm = T) #roanoke
+
+#Ck
+mean(USGS02055100$flowdata$ck,na.rm = T) #tinker
+mean(USGS02054530$flowdata$ck) #glenvar
+mean(USGS02055000$flowdata$ck,na.rm = T) #roanoke
+
+
 #GS hw plots
 #Embudo Ck at Dixon
 plot(USGS08279000$flowdata$dateTime,USGS08279000$flowdata$cms,
@@ -298,3 +309,38 @@ plot(USGS08279000$flowdata$dateTime,USGS08279000$flowdata$cms,
      ylim=c(0,4))
 lines(USGS08279000$flowdata$outTime,USGS08279000$flowdata$cms,col=2)
 
+#Rio Grande below Taos Junction
+plot(USGS08276500$flowdata$dateTime,USGS08276500$flowdata$cms,
+     type="l",xlim=c(USGS08276500$flowdata$dateTime[11595],
+                     USGS08276500$flowdata$dateTime[11600+40]),
+     ylab="Discharge (m^3/s)",xlab="Date Time",main="USGS 08276500 Rio Grande Below Taos Junction, NM",
+     ylim=c(0,30))
+lines(USGS08276500$flowdata$outTime,USGS08276500$flowdata$cms,col=2)
+
+#Rio Pueblo De Taos below Los Cordovas,NM 08276300
+plot(USGS08276300$flowdata$dateTime,USGS08276300$flowdata$cms,
+     type="l",xlim=c(USGS08276300$flowdata$dateTime[14550],
+                     USGS08276300$flowdata$dateTime[14550+100]),
+     ylab="Discharge (m^3/s)",xlab="Date Time",main="USGS 08276300 Rio Pueblo De Taos Below Los Cordovas, NM",
+     ylim=c(0,4))
+lines(USGS08276300$flowdata$outTime,USGS08276300$flowdata$cms,col=2)
+
+#lengths
+USGS08279000$site$L #embudo
+USGS08276500$site$L #taos
+USGS08276300$site$L #cordovas
+
+#slope
+USGS08279000$site$slope #embudo
+USGS08276500$site$slope #taos
+USGS08276300$site$slope #cordovas
+
+#Ck
+mean(USGS08279000$flowdata$ck,na.rm = T)
+mean(USGS08276500$flowdata$ck)
+mean(USGS08276300$flowdata$ck,na.rm = T) 
+
+#dt
+mean(USGS08279000$flowdata$dt,na.rm = T)
+mean(USGS08276500$flowdata$dt)
+mean(USGS08276300$flowdata$dt,na.rm = T) 

@@ -558,7 +558,7 @@ MUSLE$LSm=.6*(1-exp(-35.835*MUSLE$slp/100))
 MUSLE$LS=(MUSLE$slopelenusle_r/22.1)^MUSLE$LSm * (65.41*sin(MUSLE$alpha)^2+4.56*sin(MUSLE$alpha)+0.065)
 #
 # Pusle
-#MUSLE$Pusle=.50
+MUSLE$Pusle=.50
 MUSLE$Pusle=c(0.6,0.5,0.5,0.5,0.6)
 #
 # Cusle
@@ -658,13 +658,13 @@ TIC04$cumY <- cumsum(TIC04$sedP)
 TIC05$cumY <- cumsum(TIC05$sedP)
 sed_sum$yieldP <- c(sum(TIC01$sedP), sum(TIC02$sedP), sum(TIC03$sedP), sum(TIC04$sedP), sum(TIC05$sedP))
 
-ggplot(TIC01,aes(date,sed,color="Daily"))+
+ggplot(TIC05,aes(date,sed,color="Daily"))+
   geom_line()+
-  geom_line(aes(y=cumY*3/200, color="Cumulative"))+
+  geom_line(aes(y=cumY*3/250, color="Cumulative"))+
   scale_y_continuous(name="Sediment Yield (tons)",
-                     sec.axis=sec_axis(~.*(200/3),name="Cumulative Sediment Yield (tons)"))+
+                     sec.axis=sec_axis(~.*(250/3),name="Cumulative Sediment Yield (tons)"))+
   scale_color_hue(name=element_blank())+
-  labs(x=element_blank(),title="TI Class 1")
+  labs(x=element_blank(),title="TI Class 5")
 
  
 #grouped sed bar chart
@@ -678,6 +678,31 @@ sed_bar <- data.frame(Tindex,Pcalc,yield,Pvalue)
 ggplot(sed_bar,aes(fill=Pcalc,y=yield,x=Tindex))+
   geom_bar(position="dodge",stat="identity")+
   geom_text(position=position_dodge(width=1),aes(y=yield+5,label=Pvalue))+
-  scale_color_hue(name=element_blank())+
+  scale_fill_hue(name=element_blank())+
   labs(y="Total Sediment Yield (tons)",x="TI Class")
+
+#annual sediment loss for years with full record. 
+
+TIC01$year <- year(TIC01$date)
+TIC02$year <- year(TIC02$date)
+TIC03$year <- year(TIC03$date)
+TIC04$year <- year(TIC04$date)
+TIC05$year <- year(TIC05$date)
+
+TIC01_annual <- TIC01 %>% group_by(year) %>% filter(n()>350) %>% summarize(annual_sed=sum(sed),annual_sedP=sum(sedP),count=n())
+TIC02_annual <- TIC02 %>% group_by(year) %>% filter(n()>350) %>% summarize(annual_sed=sum(sed),annual_sedP=sum(sedP),count=n())
+TIC03_annual <- TIC03 %>% group_by(year) %>% filter(n()>350) %>% summarize(annual_sed=sum(sed),annual_sedP=sum(sedP),count=n())
+TIC04_annual <- TIC04 %>% group_by(year) %>% filter(n()>350) %>% summarize(annual_sed=sum(sed),annual_sedP=sum(sedP),count=n())
+TIC05_annual <- TIC05 %>% group_by(year) %>% filter(n()>350) %>% summarize(annual_sed=sum(sed),annual_sedP=sum(sedP),count=n())
+
+rcl <- as.matrix(data.frame(c(1:5),c(mean(TIC01_annual$annual_sed), mean(TIC02_annual$annual_sed),mean(TIC03_annual$annual_sed),mean(TIC04_annual$annual_sed),mean(TIC05_annual$annual_sed))))
+rclP <- as.matrix(data.frame(c(1:5),c(mean(TIC01_annual$annual_sedP), mean(TIC02_annual$annual_sedP),mean(TIC03_annual$annual_sedP),mean(TIC04_annual$annual_sedP),mean(TIC05_annual$annual_sedP))))
+
+TIC_rcl <- reclassify(TIC,rcl)
+TIC_rclP <- reclassify(TIC,rclP)
+
+
+plot(TIC_rcl)
+plot(TIC_rclP)
+
 

@@ -680,3 +680,4 @@ ggplot(sed_bar,aes(fill=Pcalc,y=yield,x=Tindex))+
   geom_text(position=position_dodge(width=1),aes(y=yield+5,label=Pvalue))+
   scale_color_hue(name=element_blank())+
   labs(y="Total Sediment Yield (tons)",x="TI Class")
+

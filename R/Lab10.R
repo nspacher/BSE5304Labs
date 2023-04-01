@@ -49,7 +49,7 @@ setwd(datadir)
 # Should we do a gage that is easy, or deal with some reality?
 #
 myflowgage_id="0205551460"  # Old Friendly Gage
-myflowgage_id="14216500"    # Most Frustrating Gage... lets do it!
+#myflowgage_id="14216500"    # Most Frustrating Gage... lets do it!
 myflowgage=get_usgs_gage(myflowgage_id,begin_date = "2015-01-01",
                          end_date = "2022-03-01")
 
@@ -95,7 +95,7 @@ myflowgage$gagepoint_utm=spTransform(myflowgage$gagepoint_ll,crs_utm)
 # Open up maps.google.com to guesstimate area/lengths
 url=paste0("https://www.google.com/maps/@",
            myflowgage$declat,",",myflowgage$declon,",18z")
-browseURL(url)
+#browseURL(url)
 # We are going to over estimate our area
 # For our search we are going to multiply the area by 6 and
 # to get the distance
@@ -399,16 +399,16 @@ TMWBnew=TMWBmodel(TMWB)
 # return(TMWB)
 
 
-BasinTMWB_JO=TMWBnew[(month(TMWBnew$date) 5 
+BasinTMWB_JO=TMWBnew[(month(TMWBnew$date)> 5 
                       & month(TMWBnew$date) < 11),]
 attach(BasinTMWB_JO)
 plot(dP,Qmm)
 detach(BasinTMWB_JO)
 
-(1000/85-10)*25.4   # our CN estimate in bold
-#[1] 44.82353
-(1000/50-10)*25.4   # our CN estimate in bold
-#[1] 254
+# (1000/85-10)*25.4   # our CN estimate in bold
+# #[1] 44.82353
+# (1000/50-10)*25.4   # our CN estimate in bold
+# #[1] 254
 #
 # So we are going to visually "guestimate" that S should be somewhere between 
 # 45mm and 260mm… repeat plotting until your solution covers the 
@@ -489,7 +489,7 @@ hru_table$areaSQKM = as.vector(round(res(hru)[1]*res(hru)[2]*
 #
 # To better understand what happened, look at the new hru_table
 summary(hru_table)
-View(hru_table)
+#View(hru_table)
 
 rm("mu2co")
 for (mymukey in unique(hru_table$mukey)){
@@ -503,7 +503,7 @@ for (mymukey in unique(hru_table$mukey)){
     mu2co=rbind(mu2co,SDA_query(q_mu2co))
   } 
 }
-View(mu2co)
+#View(mu2co)
 # Second associate cokey with ksat_r,awc_r,hzdepb_r from chorizon
 # cokey_statement = format_SQL_in_statement(unique(mu2co$cokey))
 # q_co2ch = paste("SELECT cokey,ksat_r,awc_r,hzdepb_r,frag3to10_r  
@@ -521,7 +521,7 @@ for (mycokey in unique(mu2co$cokey)){
     try((co2ch=rbind(co2ch,SDA_query(q_co2ch))))
   } 
 }
-View(co2ch)
+#View(co2ch)
 rm("co2co")
 for (mycokey in unique(mu2co$cokey)){
   print(mycokey)
@@ -533,12 +533,12 @@ for (mycokey in unique(mu2co$cokey)){
   else{
     try((co2co=rbind(co2co,SDA_query(q_co2co))))} 
 }
-View(co2co)
+#View(co2co)
 # Last, bring them back together, and aggregate based on max values
 # of ksat_r,awc_r, and hzdepb_r
 mu2ch=merge(mu2co,co2ch)
 mu2ch=merge(mu2ch,co2co)
-View(mu2ch)
+#View(mu2ch)
 
 MUSLE_mrg=merge(hru_table,mu2ch)   
 MUSLE_mrg$ksat_r=as.numeric(MUSLE_mrg$ksat_r)
@@ -558,7 +558,8 @@ MUSLE$LSm=.6*(1-exp(-35.835*MUSLE$slp/100))
 MUSLE$LS=(MUSLE$slopelenusle_r/22.1)^MUSLE$LSm * (65.41*sin(MUSLE$alpha)^2+4.56*sin(MUSLE$alpha)+0.065)
 #
 # Pusle
-MUSLE$Pusle=.50
+#MUSLE$Pusle=.50
+MUSLE$Pusle=c(0.6,0.5,0.5,0.5,0.6)
 #
 # Cusle
 MUSLE$Cusle=.20
@@ -596,7 +597,7 @@ VSAsol[,CN:=25400/(sigma+254)]
 VSAsol
 
 VSAParams=merge(VSAsol,MUSLE,by.x="TIClass",by.y="TIclass")
-View(VSAParams)
+#View(VSAParams)
 
 TIC01=TMWB
 TIC02=TMWB
@@ -610,3 +611,72 @@ TIC01$qpeak=TIC01$Qpred/3600/24/1000*myflowgage$area/nTIclass*10^6 #m^3/sec
 
 TIC01$sed=(TIC01$Qpred*TIC01$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[1]    # Eq. 4:1.1.1 SWAT Theory
 
+#TICO2
+TIC02 = CNmodel(CNmodeldf = TIC02, CNavg=VSAParams$CN[2], 
+                declat=myflowgage$declat,declon=myflowgage$declon)
+TIC02$qpeak=TIC02$Qpred/3600/24/1000*myflowgage$area/nTIclass*10^6 #m^3/sec
+
+TIC02$sed=(TIC02$Qpred*TIC02$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[2]    # Eq. 4:1.1.1 SWAT Theory
+
+#TICO3
+TIC03 = CNmodel(CNmodeldf = TIC03, CNavg=VSAParams$CN[3], 
+                declat=myflowgage$declat,declon=myflowgage$declon)
+TIC03$qpeak=TIC03$Qpred/3600/24/1000*myflowgage$area/nTIclass*10^6 #m^3/sec
+
+TIC03$sed=(TIC03$Qpred*TIC03$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[3]    # Eq. 4:1.1.1 SWAT Theory
+
+#TICO4
+TIC04 = CNmodel(CNmodeldf = TIC04, CNavg=VSAParams$CN[4], 
+                declat=myflowgage$declat,declon=myflowgage$declon)
+TIC04$qpeak=TIC04$Qpred/3600/24/1000*myflowgage$area/nTIclass*10^6 #m^3/sec
+
+TIC04$sed=(TIC04$Qpred*TIC04$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[4]
+
+#TICO5
+TIC05 = CNmodel(CNmodeldf = TIC05, CNavg=VSAParams$CN[5], 
+                declat=myflowgage$declat,declon=myflowgage$declon)
+TIC05$qpeak=TIC05$Qpred/3600/24/1000*myflowgage$area/nTIclass*10^6 #m^3/sec
+
+TIC05$sed=(TIC05$Qpred*TIC05$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[5]
+
+sed_sum <- as.data.frame(VSAParams$TIClass)
+rename(sed_sum,TIClass="VSAParams$TIClass")
+sed_sum$yield_tons <- c(sum(TIC01$sed), sum(TIC02$sed), sum(TIC03$sed), sum(TIC04$sed), sum(TIC05$sed))
+
+
+#Pusle from land slope% sediment yield
+TIC01$sedP=(TIC01$Qpred*TIC01$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[1] 
+TIC02$sedP=(TIC02$Qpred*TIC02$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[2]
+TIC03$sedP=(TIC03$Qpred*TIC03$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[3] 
+TIC04$sedP=(TIC04$Qpred*TIC04$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[4]
+TIC05$sedP=(TIC05$Qpred*TIC05$qpeak*myflowgage$area/nTIclass*100)^.56*MUSLE$KCPLSCFRG118[5]
+
+TIC01$cumY <- cumsum(TIC01$sedP)
+TIC02$cumY <- cumsum(TIC02$sedP)
+TIC03$cumY <- cumsum(TIC03$sedP)
+TIC04$cumY <- cumsum(TIC04$sedP)
+TIC05$cumY <- cumsum(TIC05$sedP)
+sed_sum$yieldP <- c(sum(TIC01$sedP), sum(TIC02$sedP), sum(TIC03$sedP), sum(TIC04$sedP), sum(TIC05$sedP))
+
+ggplot(TIC01,aes(date,sed,color="Daily"))+
+  geom_line()+
+  geom_line(aes(y=cumY*3/200, color="Cumulative"))+
+  scale_y_continuous(name="Sediment Yield (tons)",
+                     sec.axis=sec_axis(~.*(200/3),name="Cumulative Sediment Yield (tons)"))+
+  scale_color_hue(name=element_blank())+
+  labs(x=element_blank(),title="TI Class 1")
+
+ 
+#grouped sed bar chart
+
+Tindex <- c(rep(c(1,2,3,4,5),2))
+Pcalc <- c(rep("Static P",5),rep("Land Slope P",5))
+yield <- append(sed_sum$yield_tons,sed_sum$yieldP)
+Pvalue <- c(rep(0.5,5),0.6,0.5,0.5,0.5,0.6)
+sed_bar <- data.frame(Tindex,Pcalc,yield,Pvalue)
+
+ggplot(sed_bar,aes(fill=Pcalc,y=yield,x=Tindex))+
+  geom_bar(position="dodge",stat="identity")+
+  geom_text(position=position_dodge(width=1),aes(y=yield+5,label=Pvalue))+
+  scale_color_hue(name=element_blank())+
+  labs(y="Total Sediment Yield (tons)",x="TI Class")

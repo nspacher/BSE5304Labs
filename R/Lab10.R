@@ -558,7 +558,7 @@ MUSLE$LSm=.6*(1-exp(-35.835*MUSLE$slp/100))
 MUSLE$LS=(MUSLE$slopelenusle_r/22.1)^MUSLE$LSm * (65.41*sin(MUSLE$alpha)^2+4.56*sin(MUSLE$alpha)+0.065)
 #
 # Pusle
-MUSLE$Pusle=.50
+#MUSLE$Pusle=.50
 MUSLE$Pusle=c(0.6,0.5,0.5,0.5,0.6)
 #
 # Cusle
@@ -658,13 +658,15 @@ TIC04$cumY <- cumsum(TIC04$sedP)
 TIC05$cumY <- cumsum(TIC05$sedP)
 sed_sum$yieldP <- c(sum(TIC01$sedP), sum(TIC02$sedP), sum(TIC03$sedP), sum(TIC04$sedP), sum(TIC05$sedP))
 
-ggplot(TIC05,aes(date,sed,color="Daily"))+
+#data frame for total aggregate
+agg <- TIC01 %>% dplyr::select(date,sedP)
+agg <- rename(agg,TI1=sedP)
+agg <- mutate(agg, TI2=TIC02$sedP,TI3=TIC03$sedP,TI4=TIC04$sedP,TI5=TIC05$sedP)
+agg <- agg %>% mutate(total=TI1+TI2+TI3+TI4+TI5)
+
+ggplot(agg,aes(date,total))+
   geom_line()+
-  geom_line(aes(y=cumY*3/250, color="Cumulative"))+
-  scale_y_continuous(name="Sediment Yield (tons)",
-                     sec.axis=sec_axis(~.*(250/3),name="Cumulative Sediment Yield (tons)"))+
-  scale_color_hue(name=element_blank())+
-  labs(x=element_blank(),title="TI Class 5")
+  labs(x=element_blank(),y="Sediment Yield (tons)",title="Total Aggregate")
 
  
 #grouped sed bar chart

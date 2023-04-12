@@ -632,13 +632,13 @@ rm(list=c("MF","DF")) # Clean up the environment
 # and note that the bold gives the TI Class. This figure gives a range of 
 # 0 - 520 micrograms/litre 
 
-muTS=(((520-0)/5)*VSAsol$TI+0) # use VSAsol$TIClass table to 
+muTS=(((520-0)/5)*TI+0) # use VSAsol$TIClass table to 
 # assign TIC to calc (remember TIC05 is in location 1 in the VSAsol$TIClass 
 # table
 # Setting range of Soil P values (MS) using the range given on page 7 of 
 # Easton et al. 2007 (3.7-18.5mg/kg), then 
 # Moore 1993… assume soil density is 2000kg/m^3 of soil
-MS=(((18.5-3.7)/5)*VSAsol$TI+3.7)*2000  # range from Easton et 
+MS=(((18.5-3.7)/5)*TI+3.7)*2000  # range from Easton et 
 # al. 2007, pg 7. Moore suggests a linear relationship
 # We will take care of all of TIClass 05 now as will so 
 # it makes sense when you repeat for TI Classes 1-4
@@ -648,14 +648,19 @@ QS= 3.0 # A guess using the middle of the range 1-5
 TR=20   # reference Temperature from Table 2.
 RunoffModel$muS= muTS*QS^((RunoffModel$Tavg-TR)/10)  # Eq. 5
 RunoffModel$DS=(RunoffModel$muS*MS*RunoffModel$Rt)/10^6          # Eq. 4
+print(MS)
 #plot(RunoffModel$date,RunoffModel$DS)#plot of losses from plant soil complex
 return(RunoffModel)
 }
 
-Ploss_test <- PLoss(TIC01,tau = 9.3,dt=1,kF=0.015,TI=1)
-plot(Ploss_test$date,Ploss_test$MF)
-plot(Ploss_test$date,Ploss_test$DF)
-plot(Ploss_test$date,Ploss_test$DS)
+DPTI01 <- PLoss(TIC01,tau = 9.3,dt=1,kF=0.015,TI=1)
+DPTI02 <- PLoss(TIC02,tau = 9.3,dt=1,kF=0.015,TI=2)
+DPTI03 <- PLoss(TIC02,tau = 9.3,dt=1,kF=0.015,TI=3)
+DPTI04 <- PLoss(TIC02,tau = 9.3,dt=1,kF=0.015,TI=4)
+DPTI05 <- PLoss(TIC02,tau = 9.3,dt=1,kF=0.015,TI=5)
+
+VSAsol$MS=c(3700,31080,21560,19240,13320)
+VSAsol$area=myflowgage$area/5 #sq km
 #P loss in baseflow
 # We will assume a simple base flow model where the stream baseflow 
 # B equals the minimum measured flow of the basin. We will build the 
@@ -674,6 +679,19 @@ DPLT$muB=muTB*QB^((DPLT$Tavg-TB)/10)  # Easton eq. 10
 DPLT$LB=DPLT$muB*DPLT$B     # Easton eq. 9
 plot(DPLT$date,DPLT$LB)
 
+TIC05$area=myflowgage$area/5
+TIC04$area=myflowgage$area/5
+TIC03$area=myflowgage$area/5
+TIC02$area=myflowgage$area/5
+TIC01$area=myflowgage$area/5
+
+DPLT$LT=DPLT$LB +
+  TIC05$area*(DPTI05$DF + DPTI05$DS)+
+  TIC04$area*(DPTI04$DF + DPTI04$DS)+
+  TIC03$area*(DPTI03$DF + DPTI03$DS)+
+  TIC02$area*(DPTI02$DF + DPTI02$DS)+
+  TIC01$area*(DPTI01$DF + DPTI01$DS)
+plot(DPLT$date,DPLT$LT, type="l",ylim=c(1,10))
 
 
 

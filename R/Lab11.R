@@ -593,7 +593,7 @@ TIC04 = CNmodel(CNmodeldf = TMWB, CNavg=VSAsol$CN[2],
 TIC05 = CNmodel(CNmodeldf = TMWB, CNavg=VSAsol$CN[1], 
                 declat=myflowgage$declat,declon=myflowgage$declon)
 
-PLoss <- function(RunoffModel,tau=9.3,dt=1,kF=0.015,TI){
+PLoss <- function(RunoffModel,tau,dt=1,kF=0.015,TI){
   
 # Take it to volumetric water content rather # than volumetric soil content, 
 # should be in m of water
@@ -714,7 +714,7 @@ summary(lm(cumsumDSLB~date,data=DPLT))
 0.1*totalP/0.2382/365 #years to remove 10% of P from top 20 cm of soil with no fertilizer additions. 10%/slope of lm/days to years
 
 #HW2
-meanLT <- mean(DPLT$LT)
+meanLT_tau <- mean(DPLT$LT)
 ggplot(DPLT,aes(date,LT))+
   geom_line()+
   labs(y="P Load (kg/d)",x=element_blank())
@@ -761,3 +761,29 @@ comp <- comp %>% mutate(DSchange=(comp$totalDS5-comp$totalDS)/comp$totalDS,
 
 mean((comp$totalDS5-comp$totalDS),na.rm=T)
 mean(comp$LB5-comp$LB,na.rm=T)
+
+#HW3
+
+
+#graduate student hw
+#mean annual P export for the TI classes.
+DPTI05$LT=DPLT$LB+TIC05$area*(DPTI05$DF + DPTI05$DS)
+DPTI04$LT=TIC04$area*(DPTI04$DF + DPTI04$DS)
+DPTI03$LT=TIC03$area*(DPTI03$DF + DPTI03$DS)
+DPTI02$LT=TIC02$area*(DPTI02$DF + DPTI02$DS)
+DPTI01$LT=TIC01$area*(DPTI01$DF + DPTI01$DS)
+
+DPTI05$year=year(DPTI05$date)
+DPTI04$year=year(DPTI04$date)
+DPTI03$year=year(DPTI03$date)
+DPTI02$year=year(DPTI02$date)
+DPTI01$year=year(DPTI01$date)
+DPTI05 %>% group_by(year) %>% filter(n()>350) %>% summarise(meanLT=mean(LT),count=n())
+
+#DPTI01summary <- DPTI01 %>% group_by(year) %>% filter(n()>350) %>% summarise(meanLT=mean(LT),count=n())
+
+TIMeanLT <- c(mean(DPTI01summary$meanLT),mean(DPTI02summary$meanLT),mean(DPTI03summary$meanLT),
+              mean(DPTI04summary$meanLT),mean(DPTI05summary$meanLT))
+
+TIC_LT_matrix <- as.matrix(as.data.frame(c(1:5),TIMeanLT))
+

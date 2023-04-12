@@ -377,6 +377,7 @@ TMWB=BasinData
 
 source("https://raw.githubusercontent.com/vtdrfuka/BSE5304Labs/main/R/TMWBFuncs.R")
 source("https://raw.githubusercontent.com/vtdrfuka/BSE5304Labs/main/R/TISnow.R")
+
 #
 # Lets make one out of our Temperature Index Snow Model
 #
@@ -388,6 +389,7 @@ TMWB$SNOfall=SNO_df$SNOfall
 TMWB$Tsno=SNO_df$Tsno
 #
 # Our PET Model we will borrow from EcoHydrology
+
 #
 
 TMWB$PET=PET_fromTemp(Jday=(1+as.POSIXlt(TMWB$date)$yday),
@@ -576,21 +578,39 @@ rm(list=objects(pattern="HRUID")) #removing objects to save space, not using for
 # Build a dataframe for your DP Load model in TI Class 05,(you will need to do 
 #this 5 times for TIC 1-4 where you will need the date, Qpred, and Average 
 # Temperature
-DPTI05=data.frame(date=TIC05$date,
-                  Rt=TIC05$Qpred/1000, 
-                  Tavg=(TIC05$MaxTemp+TIC05$MinTemp)/2)
+# DPTI05=data.frame(date=TIC05$date,
+#                   Rt=TIC05$Qpred/1000, 
+#                   Tavg=(TIC05$MaxTemp+TIC05$MinTemp)/2)
+
+TIC01 = CNmodel(CNmodeldf = TMWB, CNavg=VSAsol$CN[5], 
+                                 declat=myflowgage$declat,declon=myflowgage$declon)
+TIC02 = CNmodel(CNmodeldf = TMWB, CNavg=VSAsol$CN[4], 
+                declat=myflowgage$declat,declon=myflowgage$declon)
+TIC03 = CNmodel(CNmodeldf = TMWB, CNavg=VSAsol$CN[3], 
+                declat=myflowgage$declat,declon=myflowgage$declon)
+TIC04 = CNmodel(CNmodeldf = TMWB, CNavg=VSAsol$CN[2], 
+                declat=myflowgage$declat,declon=myflowgage$declon)
+TIC05 = CNmodel(CNmodeldf = TMWB, CNavg=VSAsol$CN[1], 
+                declat=myflowgage$declat,declon=myflowgage$declon)
+
+PLoss <- function(RunoffModel,tau=9.3,dt=1,kF=0.015,TI){
+  
 # Take it to volumetric water content rather # than volumetric soil content, 
 # should be in m of water
-tau=9.3  # days
-dt=1     # days time step
-kF=.015  # Table 2
+# tau=9.3  # days
+# dt=1     # days time step
+# kF=.015  # Table 2
+  
+#create average temperature column
+RunoffModel$Tavg=(RunoffModel$MaxTemp+RunoffModel$MinTemp)/2
+RunoffModel$Rt=RunoffModel$Qpred/1000
 # Initialize MF and DF
-DPTI05$MF=0
-DPTI05$DF=0
+RunoffModel$MF=0
+RunoffModel$DF=0
 # Spread your P Fertilizer on ~May 1, ~August 1, and ~October 1
-DPTI05$MF[(format(DPTI05$date,"%j") %in% c(121,213,274))]=5.4*10^-4 #mg/m^2 P
+RunoffModel$MF[(format(RunoffModel$date,"%j") %in% c(121,213,274))]=5.4*10^-4 #mg/m^2 P
 # Remember what we say about attaching! 
-attach(DPTI05)
+attach(RunoffModel)
 #
 # Loop to solve MF and DF
 for (i in 2:length(date)){
@@ -599,26 +619,26 @@ for (i in 2:length(date)){
   }
   DF[i]=MF[i]*(kF*MF[i]*Rt[i]/(1+kF*MF[i]*Rt[i]))
 }
-DPTI05$MF=MF
-DPTI05$DF=DF
-detach(DPTI05)
+RunoffModel$MF=MF
+RunoffModel$DF=DF
+detach(RunoffModel)
 rm(list=c("MF","DF")) # Clean up the environment 
-dev.off() #reset graphics device
-plot(DPTI05$date,DPTI05$MF)
-plot(DPTI05$date,DPTI05$DF)
+# dev.off() #reset graphics device
+# plot(RunoffModel$date,RunoffModel$MF)
+# plot(RunoffModel$date,RunoffModel$DF)
 
 ###Soil plant complex
 # Calculate your Export Coef from Easton et al 2007 Figure 2 using TI Class 5
 # and note that the bold gives the TI Class. This figure gives a range of 
 # 0 - 520 micrograms/litre 
-# For TIC=5
-muTS_TI05=(((520-0)/5)*VSAsol$TIClass[1]+0) # use VSAsol$TIClass table to 
+
+muTS=(((520-0)/5)*VSAsol$TI+0) # use VSAsol$TIClass table to 
 # assign TIC to calc (remember TIC05 is in location 1 in the VSAsol$TIClass 
 # table
 # Setting range of Soil P values (MS) using the range given on page 7 of 
 # Easton et al. 2007 (3.7-18.5mg/kg), then 
 # Moore 1993… assume soil density is 2000kg/m^3 of soil
-MS_TI05=(((18.5-3.7)/5)*VSAsol$TIClass[1]+3.7)*2000  # range from Easton et 
+MS=(((18.5-3.7)/5)*VSAsol$TI+3.7)*2000  # range from Easton et 
 # al. 2007, pg 7. Moore suggests a linear relationship
 # We will take care of all of TIClass 05 now as will so 
 # it makes sense when you repeat for TI Classes 1-4
@@ -626,10 +646,16 @@ MS_TI05=(((18.5-3.7)/5)*VSAsol$TIClass[1]+3.7)*2000  # range from Easton et
 #
 QS= 3.0 # A guess using the middle of the range 1-5
 TR=20   # reference Temperature from Table 2.
-DPTI05$muS= muTS_TI05*QS^((DPTI05$Tavg-TR)/10)  # Eq. 5
-DPTI05$DS=(DPTI05$muS*MS_TI05*DPTI05$Rt)/10^6          # Eq. 4
-plot(DPTI05$date,DPTI05$DS)#plot of losses from plant soil complex
+RunoffModel$muS= muTS*QS^((RunoffModel$Tavg-TR)/10)  # Eq. 5
+RunoffModel$DS=(RunoffModel$muS*MS*RunoffModel$Rt)/10^6          # Eq. 4
+#plot(RunoffModel$date,RunoffModel$DS)#plot of losses from plant soil complex
+return(RunoffModel)
+}
 
+Ploss_test <- PLoss(TIC01,tau = 9.3,dt=1,kF=0.015,TI=1)
+plot(Ploss_test$date,Ploss_test$MF)
+plot(Ploss_test$date,Ploss_test$DF)
+plot(Ploss_test$date,Ploss_test$DS)
 #P loss in baseflow
 # We will assume a simple base flow model where the stream baseflow 
 # B equals the minimum measured flow of the basin. We will build the 

@@ -756,6 +756,8 @@ ggplot(comp,aes(date,LB5,color="5C Increase"))+
   scale_color_hue(name=element_blank())+
   labs(y=expression(paste(L[b]," (kg/",m^2,")")),x=element_blank())  
 
-comp <- comp %>% mutate(DSchange=(totalDS5-comp$totalDS)/comp$totalDS,
+comp <- comp %>% mutate(DSchange=(comp$totalDS5-comp$totalDS)/comp$totalDS,
                         LBchange=(LB5-LB)/LB)
 
+mean((comp$totalDS5-comp$totalDS),na.rm=T)
+mean(comp$LB5-comp$LB,na.rm=T)

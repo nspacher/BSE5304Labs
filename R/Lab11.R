@@ -659,7 +659,7 @@ DPTI03 <- PLoss(TIC02,tau = 9.3,dt=1,kF=0.015,TI=3)
 DPTI04 <- PLoss(TIC02,tau = 9.3,dt=1,kF=0.015,TI=4)
 DPTI05 <- PLoss(TIC02,tau = 9.3,dt=1,kF=0.015,TI=5)
 
-VSAsol$MS=c(3700,31080,21560,19240,13320)
+VSAsol$MS=c(3700,31080,21560,19240,13320) #mg/m^3
 VSAsol$area=myflowgage$area/5 #sq km
 #P loss in baseflow
 # We will assume a simple base flow model where the stream baseflow 
@@ -693,5 +693,69 @@ DPLT$LT=DPLT$LB +
   TIC01$area*(DPTI01$DF + DPTI01$DS)
 plot(DPLT$date,DPLT$LT, type="l",ylim=c(1,10))
 
+#P loss from base flow and plant soil (ie no fertilizer addtion)
+DPLT$DSLB=DPLT$LB+
+  TIC05$area*(DPTI05$DS)+
+  TIC04$area*(DPTI04$DS)+
+  TIC03$area*(DPTI03$DS)+
+  TIC02$area*(DPTI02$DS)+
+  TIC01$area*(DPTI01$DS)
 
+DPLT$cumsumDSLB=cumsum(DPLT$DSLB) #cumulative loss of phosphorus
+
+VSAsol <- VSAsol %>% mutate(Pmass=MS*0.2*area) #mass of P (kg) in the top 20 cm of soil for each TIClass
+totalP <- sum(VSAsol$Pmass) #total mass of P in kg in the entire watershed
+
+ggplot(DPLT,aes(date,cumsumDSLB))+
+  geom_line()
+
+max(DPLT$cumsumDSLB)
+summary(lm(cumsumDSLB~date,data=DPLT))
+0.1*totalP/0.2382/365 #years to remove 10% of P from top 20 cm of soil with no fertilizer additions. 10%/slope of lm/days to years
+
+#HW2
+meanLT <- mean(DPLT$LT)
+ggplot(DPLT,aes(date,LT))+
+  geom_line()+
+  labs(y="P Load (kg/d)",x=element_blank())
+
+#5 C increase in avg tempeature 
+DPLT5=data.frame(date=TIC05$date,
+                Rt=TIC05$Qpred/1000.0,
+                Tavg=(TIC05$MaxTemp+TIC05$MinTemp)/2+5)
+DPLT5$B=min(TIC05$Qmm)*myflowgage$area*1000*1000/1000 # m^3/day
+muTB=2.1*10^(-5) # Easton Table 2
+QB=2.2           # Easton Table 2
+TB=17            # Easton Table 2
+DPLT5$muB=muTB*QB^((DPLT5$Tavg-TB)/10)  # Easton eq. 10
+DPLT5$LB=DPLT5$muB*DPLT5$B 
+
+DPLT5$LT=DPLT5$LB +
+  TIC05$area*(DPTI055$DF + DPTI055$DS)+
+  TIC04$area*(DPTI045$DF + DPTI045$DS)+
+  TIC03$area*(DPTI035$DF + DPTI035$DS)+
+  TIC02$area*(DPTI025$DF + DPTI025$DS)+
+  TIC01$area*(DPTI015$DF + DPTI015$DS)
+
+comp=data.frame(date=DPLT$date,
+                totalDS=DPTI01$DS+DPTI02$DS+DPTI03$DS+DPTI04$DS+DPTI05$DS,
+                totalDS5=DPTI015$DS+DPTI025$DS+DPTI035$DS+DPTI045$DS+DPTI055$DS,
+                LB=DPLT$LB,
+                LB5=DPLT5$LB
+                )
+
+ggplot(comp,aes(date,totalDS5,color="5C Increase"))+
+  geom_line()+
+  geom_line(aes(y=totalDS,color="Initial"))+
+  scale_color_hue(name=element_blank())+
+  labs(y=expression(paste(D[s]," (kg/",m^2,")")),x=element_blank())
+
+ggplot(comp,aes(date,LB5,color="5C Increase"))+
+  geom_line()+
+  geom_line(aes(y=LB,color="Initial"))+
+  scale_color_hue(name=element_blank())+
+  labs(y=expression(paste(L[b]," (kg/",m^2,")")),x=element_blank())  
+
+comp <- comp %>% mutate(DSchange=(totalDS5-comp$totalDS)/comp$totalDS,
+                        LBchange=(LB5-LB)/LB)
 

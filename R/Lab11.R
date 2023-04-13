@@ -93,9 +93,9 @@ myflowgage$gagepoint_ll <- SpatialPoints(latlon)
 proj4string(myflowgage$gagepoint_ll)=proj4_ll
 myflowgage$gagepoint_utm=spTransform(myflowgage$gagepoint_ll,crs_utm)
 # Open up maps.google.com to guesstimate area/lengths
-url=paste0("https://www.google.com/maps/@",
-           myflowgage$declat,",",myflowgage$declon,",18z")
-browseURL(url)
+# url=paste0("https://www.google.com/maps/@",
+#            myflowgage$declat,",",myflowgage$declon,",18z")
+# browseURL(url)
 # We are going to over estimate our area
 # For our search we are going to multiply the area by 6 and
 # to get the distance
@@ -778,12 +778,27 @@ DPTI04$year=year(DPTI04$date)
 DPTI03$year=year(DPTI03$date)
 DPTI02$year=year(DPTI02$date)
 DPTI01$year=year(DPTI01$date)
-DPTI05 %>% group_by(year) %>% filter(n()>350) %>% summarise(meanLT=mean(LT),count=n())
 
-#DPTI01summary <- DPTI01 %>% group_by(year) %>% filter(n()>350) %>% summarise(meanLT=mean(LT),count=n())
+DPTI05summary <- dplyr::select(DPTI05,year,LT) %>% dplyr::group_by(year) %>% dplyr::filter(n()>350) %>% dplyr::summarise(annualLT=sum(LT),count=n())
+DPTI04summary <- dplyr::select(DPTI04,year,LT) %>% dplyr::group_by(year) %>% dplyr::filter(n()>350) %>% dplyr::summarise(annualLT=sum(LT),count=n())
+DPTI03summary <- dplyr::select(DPTI03,year,LT) %>% dplyr::group_by(year) %>% dplyr::filter(n()>350) %>% dplyr::summarise(annualLT=sum(LT),count=n())
+DPTI02summary <- dplyr::select(DPTI02,year,LT) %>% dplyr::group_by(year) %>% dplyr::filter(n()>350) %>% dplyr::summarise(annualLT=sum(LT),count=n())
+DPTI01summary <- dplyr::select(DPTI01,year,LT) %>% dplyr::group_by(year) %>% dplyr::filter(n()>350) %>% dplyr::summarise(annualLT=sum(LT),count=n())
 
-TIMeanLT <- c(mean(DPTI01summary$meanLT),mean(DPTI02summary$meanLT),mean(DPTI03summary$meanLT),
-              mean(DPTI04summary$meanLT),mean(DPTI05summary$meanLT))
 
-TIC_LT_matrix <- as.matrix(as.data.frame(c(1:5),TIMeanLT))
+TIMeanLT <- c(mean(DPTI01summary$annualLT),mean(DPTI02summary$annualLT),mean(DPTI03summary$annualLT),
+              mean(DPTI04summary$annualLT),mean(DPTI05summary$annualLT))
 
+TIC_LT_df <- data.frame(c(1:5),TIMeanLT)
+TIC_LT_matrix <- as.matrix(TIC_LT_df)
+
+plot(TIC_terra)
+TIC_Ploss <- terra::classify(TIC_terra,TIC_LT_matrix)
+TIC_Ploss_df <- as.data.frame(TIC_Ploss,xy=T)
+
+plot(TIC_Ploss)
+ggplot(TIC_Ploss_df)+
+  geom_raster(aes(x=x,y=y,fill=factor(round(layer,2))))+
+  scale_fill_viridis_d(name="Mean Annual P Loss (kg/year)")+
+  theme(legend.position = c(0.8,0.8))+
+  labs(x=element_blank(),y=element_blank())

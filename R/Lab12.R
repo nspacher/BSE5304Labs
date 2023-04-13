@@ -207,3 +207,16 @@ print(Solar_Looped.seq.sobol, digits = 2)
 dev.off()
 plot(Solar_Looped.seq.sobol, normalized = TRUE, color = terrain.colors)
 
+Solar_Looped.seq.fast <- multisensi(design = fast99, model = Solar_Looped,
+                                      center = FALSE, reduction = NULL, analysis = analysis.sensitivity,
+                                      design.args=list( factors=c("Tx","Trange","slope","aspect","lat"), 
+                                                        n=1000, q = "qunif",
+                                                        q.arg = list(list(min=5, max=30), 
+                                                                     list(min=2, max=16),
+                                                                     list(min=0, max=.2),
+                                                                     list(min=0, max=.2),
+                                                                     list(min = 0.0, max = 1.1))),
+                                      analysis.args=list(keep.outputs=FALSE))
+
+print(Solar_Looped.seq.fast,digits=2)
+plot(Solar_Looped.seq.fast, normalized = TRUE, color = terrain.colors)

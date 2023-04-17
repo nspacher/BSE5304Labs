@@ -223,7 +223,7 @@ plot(Solar_Looped.seq.fast, normalized = TRUE, color = terrain.colors)
 
 
 ####### HW1 ##########
-EcoHydRology::PET_fromTemp()
+?EcoHydRology::PET_fromTemp()
 #forest ranges from 0 to 1. It should always set to zero for landscape-wide processes 
 #regardless of the amount of forest present. Only change this if calculating PET under a canopy.
 
@@ -237,12 +237,13 @@ PET_fromTemp <- function (Jday, Tmax_C, Tmin_C, lat_radians, AvgT = (Tmax_C + Tm
   return(potentialET)
 }
 
+PET_fromTemp(3,25,4,0.5,albedo=0.18,TerrestEmiss = 0.97, aspect = 0, slope = 0, forest = 0, PTconstant=1.26, AEparams=list(vp=NULL, opt="linear"))
+
 J <- seq(from = 1, to = 365, by = 5) #julian day sequence
 X <- data.frame(Tmax_C = runif(n, min = 5, max = 30), Trange = runif(n, min = 2,max = 16), 
                 slope = runif(n, min = 0.0, max = 0.2),
                 aspect = runif(n, min = 0.0, max = 0.2),
                 lat_radians=runif(n, min = 0.0, max = 1.1))
-
 
 PET_fromTemp_looped <- function(X, Jday = J) {
   out <- matrix(nrow = nrow(X), ncol = length(Jday), NA)
@@ -250,11 +251,62 @@ PET_fromTemp_looped <- function(X, Jday = J) {
     out[i, ] <- PET_fromTemp(Jday=Jday,Tmax_C=X$Tmax_C[i],
                              Tmin_C=(X$Tmax_C[i]-X$Trange[i]),
                              lat_radians=X$lat_radians[i],
-                             AvgT=(X$Tmax_C[i] + X$Tmin_C[i])/2,
                              albedo=0.18,
                              TerrestEmiss=0.97,
                              aspect=X$aspect[i],slope=X$slope[i],
                              forest=0,PTconstant=1.26,
+                             AEparams=list(vp=NULL, opt="linear"))
+  }
+  out <- as.data.frame(out)
+  names(out) <- paste("Jday", Jday, sep = "")
+  return(out)
+}
+
+Y <- PET_fromTemp_looped(X,Jday = J)
+
+par(cex.axis = 0.7, cex.lab = 0.8)
+plot(J, Y[1, ], type = "l", xlab = "Day of Year", 
+     ylab = "PET")
+for (i in 2:n) {
+  lines(J, Y[i, ], type = "l", col = i)
+}
+
+PET_fromTemp_Looped.seq <- multisensi(model=PET_fromTemp_looped, reduction=NULL, center=FALSE,
+                               design.args = list( Tmax_C = c(5,15,25), 
+                                                   Trange = c(2,9,16), 
+                                                   slope = c(0.1,0.2,0.3),
+                                                   aspect = c(0.1,.5,1.0),
+                                                   lat_radians=c(0.1,.77,1.1)))
+
+dev.off() # Clean up previous par()
+plot(PET_fromTemp_Looped.seq, normalized = TRUE, color = terrain.colors, gsi.plot = FALSE)#normalized the upper subplot shows the extreme (tirets), #inter-quartile (grey) and median (bold line) output values
+title(xlab = "Days of the Year.")
+plot(PET_fromTemp_Looped.seq, normalized = FALSE, color = terrain.colors, gsi.plot = FALSE)
+title(xlab = "Days of the Year.")
+
+PET_fromTemp_Looped.pca <- multisensi(model=PET_fromTemp_looped, reduction=basis.ACP, scale=FALSE,
+                               design.args = list( Tmax_C = c(5,15,25), 
+                                                   Trange = c(2,9,16), 
+                                                   slope = c(0.1,0.2,0.3),
+                                                   aspect = c(0.1,.5,1.0),
+                                                   lat_radians=c(0.1,.77,1.1)))
+
+dev.off()
+plot(PET_fromTemp_Looped.pca, graph = 1)
+plot(PET_fromTemp_Looped.pca, graph = 2)
+plot(PET_fromTemp_Looped.pca, graph = 3)
+
+#########
+?EcoHydRology::NetRad()
+NetRad_looped <- function(X, Jday = J) {
+  out <- matrix(nrow = nrow(X), ncol = length(Jday), NA)
+  for (i in 1:nrow(X)) {
+    out[i, ] <- NetRad(Jday=Jday,Tx=X$Tmax_C[i],
+                             Tn=(X$Tmax_C[i]-X$Trange[i]),
+                             lat=X$lat_radians[i],
+                             albedo=0.18,forest=0,
+                             aspect=X$aspect[i],slope=X$slope[i],
+                             PTconstant=1.26,surfemissivity = 0.97,
                              AEparams=list(vp=NULL, opt="linear"))
   }
   out <- as.data.frame(out)

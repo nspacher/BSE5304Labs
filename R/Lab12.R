@@ -220,3 +220,44 @@ Solar_Looped.seq.fast <- multisensi(design = fast99, model = Solar_Looped,
 
 print(Solar_Looped.seq.fast,digits=2)
 plot(Solar_Looped.seq.fast, normalized = TRUE, color = terrain.colors)
+
+
+####### HW1 ##########
+EcoHydRology::PET_fromTemp()
+#forest ranges from 0 to 1. It should always set to zero for landscape-wide processes 
+#regardless of the amount of forest present. Only change this if calculating PET under a canopy.
+
+PET_fromTemp <- function (Jday, Tmax_C, Tmin_C, lat_radians, AvgT = (Tmax_C + Tmin_C)/2, albedo = 0.18, TerrestEmiss = 0.97, aspect = 0, slope = 0, forest = 0, PTconstant=1.26, AEparams=list(vp=NULL, opt="linear"))
+{
+  cloudiness <- EstCloudiness(Tmax_C, Tmin_C)
+  DailyRad <- NetRad(lat_radians, Jday, Tmax_C, Tmin_C, albedo, forest, slope, aspect, AvgT, cloudiness, TerrestEmiss, AvgT, AEparams=AEparams)
+  potentialET <- PTpet(DailyRad, AvgT, PTconstant)
+  potentialET[which(potentialET < 0)] <- 0
+  potentialET[which(Tmax_C == -999 | Tmin_C == -999)] <- (-999)
+  return(potentialET)
+}
+
+J <- seq(from = 1, to = 365, by = 5) #julian day sequence
+X <- data.frame(Tmax_C = runif(n, min = 5, max = 30), Trange = runif(n, min = 2,max = 16), 
+                slope = runif(n, min = 0.0, max = 0.2),
+                aspect = runif(n, min = 0.0, max = 0.2),
+                lat_radians=runif(n, min = 0.0, max = 1.1))
+
+
+PET_fromTemp_looped <- function(X, Jday = J) {
+  out <- matrix(nrow = nrow(X), ncol = length(Jday), NA)
+  for (i in 1:nrow(X)) {
+    out[i, ] <- PET_fromTemp(Jday=Jday,Tmax_C=X$Tmax_C[i],
+                             Tmin_C=(X$Tmax_C[i]-X$Trange[i]),
+                             lat_radians=X$lat_radians[i],
+                             AvgT=(X$Tmax_C[i] + X$Tmin_C[i])/2,
+                             albedo=0.18,
+                             TerrestEmiss=0.97,
+                             aspect=X$aspect[i],slope=X$slope[i],
+                             forest=0,PTconstant=1.26,
+                             AEparams=list(vp=NULL, opt="linear"))
+  }
+  out <- as.data.frame(out)
+  names(out) <- paste("Jday", Jday, sep = "")
+  return(out)
+}

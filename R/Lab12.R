@@ -340,8 +340,8 @@ CN <- c(30:100)
 S_avg <- 1000/CN -10
 min(S_avg)
 max(S_avg)
-SWC <- seq(from=0, to=0.5, by=0.01)
-fc <- seq(0.09:0.4,by=0.01)
+SWC <- seq(from=0, to=0.5, by=0.01)#how could this be constrained to always be less than the porosity. 
+fc <- seq(0.09:0.4,by=0.01)#how could this be constrained to always be less than the porosity. 
 porosity <- seq(0.3:0.5,by=0.01)
 
 

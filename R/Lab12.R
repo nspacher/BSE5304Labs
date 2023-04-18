@@ -277,6 +277,7 @@ PET_fromTemp_Looped.seq <- multisensi(model=PET_fromTemp_looped, reduction=NULL,
                                                    slope = c(0.1,0.2,0.3),
                                                    aspect = c(0.1,.5,1.0),
                                                    lat_radians=c(0.1,.77,1.1)))
+print(PET_fromTemp_Looped.seq,digits=2)
 
 dev.off() # Clean up previous par()
 plot(PET_fromTemp_Looped.seq, normalized = TRUE, color = terrain.colors, gsi.plot = FALSE)#normalized the upper subplot shows the extreme (tirets), #inter-quartile (grey) and median (bold line) output values
@@ -301,15 +302,46 @@ plot(PET_fromTemp_Looped.pca, graph = 3)
 NetRad_looped <- function(X, Jday = J) {
   out <- matrix(nrow = nrow(X), ncol = length(Jday), NA)
   for (i in 1:nrow(X)) {
-    out[i, ] <- NetRad(Jday=Jday,Tx=X$Tmax_C[i],
-                             Tn=(X$Tmax_C[i]-X$Trange[i]),
-                             lat=X$lat_radians[i],
-                             albedo=0.18,forest=0,
-                             aspect=X$aspect[i],slope=X$slope[i],
-                             PTconstant=1.26,surfemissivity = 0.97,
-                             AEparams=list(vp=NULL, opt="linear"))
+    out[i, ] <- NetRad(lat=X$lat_radians[i],Jday=Jday,
+                       Tx=X$Tmax_C[i],Tn=(X$Tmax_C[i]-X$Trange[i]),
+                       albedo=0.18,forest=0,slope=X$slope[i],
+                       aspect=X$aspect[i],
+                       cloudiness = "Estimate",surfemissivity = 0.97, units="kJm2d",
+                       AEparams=list(vp=NULL, opt="linear"))
   }
   out <- as.data.frame(out)
   names(out) <- paste("Jday", Jday, sep = "")
   return(out)
 }
+
+NetRad_looped.seq <- multisensi(model=NetRad_looped,reduction=NULL,center=F,
+                                design.args=list(Tmax_C = c(5,15,25), 
+                                                  Trange = c(2,9,16), 
+                                                  slope = c(0.1,0.2,0.3),
+                                                  aspect = c(0.1,.5,1.0),
+                                                  lat_radians=c(0.1,.77,1.1)))
+
+plot(NetRad_looped.seq,normalized=F, color = terrain.colors, gsi.plot = FALSE)
+title(xlab = "Days of the Year.")
+
+
+NetRad_looped.pca <- multisensi(model=NetRad_looped, reduction=basis.ACP, scale=FALSE,
+                                design.args = list( Tmax_C = c(5,15,25), 
+                                                    Trange = c(2,9,16), 
+                                                    slope = c(0.1,0.2,0.3),
+                                                    aspect = c(0.1,.5,1.0),
+                                                    lat_radians=c(0.1,.77,1.1)))
+dev.off()
+plot(NetRad_looped.pca,graph=1)
+
+####### SOIL STORAGE ##################
+?EcoHydRology::SoilStorage()
+CN <- c(30:100)
+S_avg <- 1000/CN -10
+min(S_avg)
+max(S_avg)
+SWC <- seq(from=0, to=0.5, by=0.01)
+fc <- seq(0.09:0.4,by=0.01)
+porosity <- seq(0.3:0.5,by=0.01)
+
+

@@ -383,26 +383,31 @@ Savg <- (1000/CN -10+1)*25.4
 SoilStorage_Looped <- function(S, S_avg=Savg){
   out <- matrix(nrow = nrow(S), ncol = length(S_avg), NA)
   for (i in 1:nrow(S)) {
-    out[i, ] <- SoilStorage(S_avg=S_avg, field_capacity = S$porosity[i],
-                            soil_water_content = S$soil_water_content[i]+S$field_capacity[i],
-                            porosity = S$soil_water_content[i]+S$field_capacity[i]+S$porosity[i])
+    out[i, ] <- SoilStorage(S_avg=S_avg, field_capacity = S$fc[i],
+                            soil_water_content = S$fc[i]-S$delta_wc[i],
+                            porosity = S$delta_wc[i]+S$fc[i]+S$delta_p[i])
   }
   out <- as.data.frame(out)
   names(out) <- paste("Savg", S_avg, sep = "")
   return(out)
 }
-tmp <- SoilStorage_Looped(S,Savg)
+#tmp <- SoilStorage_Looped(S,Savg)
 # SoilStorage(24,0.09,0.01,0.3)
 
 # plot(tmp)
 SoilStorage_looped.seq <- multisensi(model=SoilStorage_Looped,reduction=NULL,center=F,
-                                design.args=list(soil_water_content = c(0.1,0.06,0.11), 
-                                                     field_capacity = c(0.1,0.07,0.13), 
-                                                           porosity = c(0.1,0.15,0.2)))
-# View(SoilStorage)
+                                design.args=list(delta_wc = c(0.1,0.06,0.11), 
+                                                     fc = c(0.1,0.07,0.13), 
+                                                           delta_p = c(0.1,0.15,0.2)))
+
+dev.off() # Clean up previous par()
+plot(SoilStorage_looped.seq, normalized = TRUE, color = terrain.colors, gsi.plot = FALSE)#normalized the upper subplot shows the extreme (tirets), #inter-quartile (grey) and median (bold line) output values
+title(xlab = "Days of the Year.")
+plot(SoilStorage_looped.seq, normalized = FALSE, color = terrain.colors, gsi.plot = FALSE)
+title(xlab = "Days of the Year.")
 
 SoilStorage_looped.pca <- multisensi(model=SoilStorage_Looped,reduction=basis.ACP,scale=F,
-                                     design.args=list(soil_water_content = c(0.1,0.06,0.11), 
-                                                      field_capacity = c(0.1,0.07,0.13), 
-                                                      porosity = c(0.1,0.15,0.2)))
+                                     design.args=list(delta_wc= c(0.1,0.06,0.11), 
+                                                      fc = c(0.1,0.07,0.13), 
+                                                      delta_p = c(0.1,0.15,0.2)))
 plot(SoilStorage_looped.pca,graph=1)

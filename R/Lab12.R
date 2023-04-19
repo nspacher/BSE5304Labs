@@ -297,6 +297,23 @@ plot(PET_fromTemp_Looped.pca, graph = 1)
 plot(PET_fromTemp_Looped.pca, graph = 2)
 plot(PET_fromTemp_Looped.pca, graph = 3)
 
+Xb <- data.frame(Tmax_C = runif(m, min = 5, max = 30), 
+                 Trange = runif(m, min = 2,max = 16), 
+                 slope = runif(m, min = 0.0, max = 0.2),
+                 aspect = runif(m, min = 0.0, max = 0.2),
+                 lat_radians=runif(m, min = 0.0, max = 1.1))
+
+PET_fromTemp_Looped.seq.sobol <- multisensi(design = sobol2007, model = PET_fromTemp_looped,
+                                     reduction = NULL, analysis = analysis.sensitivity, center = TRUE,
+                                     design.args = list(X1 = Xb[1:(m/2), ], X2 = Xb[(1 + m/2):m, ], nboot = 100),
+                                     analysis.args = list(keep.outputs = FALSE))
+#
+# Note, this is a good time time get a drink of water and/or pee as 
+# it is running the function m=10,000 times (a few minutes).
+#
+print(Solar_Looped.seq.sobol, digits = 2)
+dev.off()
+plot(PET_fromTemp_Looped.seq.sobol, normalized = TRUE, color = terrain.colors)
 #########
 ?EcoHydRology::NetRad()
 NetRad_looped <- function(X, Jday = J) {
@@ -334,6 +351,18 @@ NetRad_looped.pca <- multisensi(model=NetRad_looped, reduction=basis.ACP, scale=
 dev.off()
 plot(NetRad_looped.pca,graph=1)
 
+NetRad_Looped.seq.sobol <- multisensi(design = sobol2007, model = NetRad_looped,
+                                            reduction = NULL, analysis = analysis.sensitivity, center = TRUE,
+                                            design.args = list(X1 = Xb[1:(m/2), ], X2 = Xb[(1 + m/2):m, ], nboot = 100),
+                                            analysis.args = list(keep.outputs = FALSE))
+#
+# Note, this is a good time time get a drink of water and/or pee as 
+# it is running the function m=10,000 times (a few minutes).
+#
+print(NetRad_Looped.seq.sobol, digits = 2)
+dev.off()
+plot(NetRad_Looped.seq.sobol, normalized = TRUE, color = terrain.colors)
+
 ####### SOIL STORAGE ##################
 ?EcoHydRology::SoilStorage()
 CN <- c(30:100)
@@ -343,25 +372,37 @@ max(S_avg)
 fc <- seq(0.09:0.4,by=0.01)#how could this be constrained to always be less than the porosity. 
 porosity <- seq(0.3:0.5,by=0.01)
 #data frame of input parameter combinations 
-S <- data.frame()
+S <- data.frame(soil_water_content=c(0.01,0.2,0.3),
+                field_capacity=c(0.09,0.2,0.3),
+                porosity=c(0.3,0.35,0.4))
 
 #SWC range of interest 
 SWC <- seq(from=0, to=0.5, by=0.01)#how could this be constrained to always be less than the porosity. 
+Savg <- (1000/CN -10+1)*25.4
 
-
-SoilStorage_Looped <- function(S, soil_water_content = SWC){
-  out <- matrix(nrow = nrow(S), ncol = length(SWC), NA)
+SoilStorage_Looped <- function(S, S_avg=Savg){
+  out <- matrix(nrow = nrow(S), ncol = length(S_avg), NA)
   for (i in 1:nrow(S)) {
-    out[i, ] <- SoilStorage(S_avg=S$S_avg[i],field_capacity = S$field_capacity[i],
-                            soil_water_content = soil_water_content,
-                            porosity = S$porosity[i])
+    out[i, ] <- SoilStorage(S_avg=S_avg, field_capacity = S$porosity[i],
+                            soil_water_content = S$soil_water_content[i]+S$field_capacity[i],
+                            porosity = S$soil_water_content[i]+S$field_capacity[i]+S$porosity[i])
   }
   out <- as.data.frame(out)
-  names(out) <- paste("SWC", soil_water_content, sep = "")
+  names(out) <- paste("Savg", S_avg, sep = "")
   return(out)
 }
+tmp <- SoilStorage_Looped(S,Savg)
+# SoilStorage(24,0.09,0.01,0.3)
 
+# plot(tmp)
 SoilStorage_looped.seq <- multisensi(model=SoilStorage_Looped,reduction=NULL,center=F,
-                                design.args=list(S_avg = c(1,10,1000/30-10), 
-                                                 field_capacity = c(0.09,0.1,0.4), 
-                                                 porosity = c(0.3,0.35,0.4)))
+                                design.args=list(soil_water_content = c(0.1,0.06,0.11), 
+                                                     field_capacity = c(0.1,0.07,0.13), 
+                                                           porosity = c(0.1,0.15,0.2)))
+# View(SoilStorage)
+
+SoilStorage_looped.pca <- multisensi(model=SoilStorage_Looped,reduction=basis.ACP,scale=F,
+                                     design.args=list(soil_water_content = c(0.1,0.06,0.11), 
+                                                      field_capacity = c(0.1,0.07,0.13), 
+                                                      porosity = c(0.1,0.15,0.2)))
+plot(SoilStorage_looped.pca,graph=1)

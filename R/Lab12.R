@@ -337,11 +337,31 @@ plot(NetRad_looped.pca,graph=1)
 ####### SOIL STORAGE ##################
 ?EcoHydRology::SoilStorage()
 CN <- c(30:100)
-S_avg <- 1000/CN -10
+S_avg <- 1000/CN -10 #inches of storage
 min(S_avg)
 max(S_avg)
-SWC <- seq(from=0, to=0.5, by=0.01)#how could this be constrained to always be less than the porosity. 
 fc <- seq(0.09:0.4,by=0.01)#how could this be constrained to always be less than the porosity. 
 porosity <- seq(0.3:0.5,by=0.01)
+#data frame of input parameter combinations 
+S <- data.frame()
 
+#SWC range of interest 
+SWC <- seq(from=0, to=0.5, by=0.01)#how could this be constrained to always be less than the porosity. 
+
+
+SoilStorage_Looped <- function(S, soil_water_content = SWC){
+  out <- matrix(nrow = nrow(S), ncol = length(SWC), NA)
+  for (i in 1:nrow(S)) {
+    out[i, ] <- SoilStorage(S_avg=S$S_avg[i],field_capacity = S$field_capacity[i],
+                            soil_water_content = soil_water_content,porosity = S$porosity[i])
+  }
+  out <- as.data.frame(out)
+  names(out) <- paste("SWC", soil_water_content, sep = "")
+  return(out)
+}
+
+SoilStorage_looped.seq <- multisensi(model=SoilStorage_Looped,reduction=NULL,center=F,
+                                design.args=list(S_avg = c(0,15,24), 
+                                                 field_capacity = c(0.09,0.1,0.4), 
+                                                 porosity = c(0.3,0.2,0.5)))
 
